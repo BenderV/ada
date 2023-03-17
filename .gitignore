@@ -2,3 +2,5 @@ service/cache
 service/run.sh
 view/node_modules
 .DS_Store
+.ipynb_checkpoints
+__pycache__

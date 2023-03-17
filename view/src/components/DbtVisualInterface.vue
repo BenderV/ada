@@ -82,7 +82,7 @@
 
 <script setup>
 import MessageDisplay from '@/components/MessageDisplay.vue'
-
+import Dashboard from '@/components/Dashboard.vue'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 import io from 'socket.io-client'

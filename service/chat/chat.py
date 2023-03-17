@@ -4,7 +4,7 @@ import diskcache
 import openai
 import requests
 
-cache = diskcache.Cache("./cache")
+cache = diskcache.Cache(".cache")
 
 
 def parse_chat_template(filename):

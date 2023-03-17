@@ -7,12 +7,9 @@ If you output a SQL query, I will run it and show you the result (first 10 rows)
 Use `sql xxx ` to start and end your SQL query.
 Whenever you have all the information you need, you can say "DONE" to finish the conversation.
 
-Syntax: PostgreSQL
-
 ## user
 
-In database "bike_1"
-
+In PostgreSQL database "bike_1" 
 Show stations in san jose installed in 2012
 
 ## assistant
