@@ -119,6 +119,7 @@ class BigQueryDatabase:
 
 class SnowflakeDatabase(AbstractDatabase):
     def __init__(self, account, user, password, database, schema, warehouse):
+        print("SnowflakeDatabase", account, user, password, database, schema, warehouse)
         self.connection = snowflake.connector.connect(
             account=account,
             user=user,
@@ -190,5 +191,9 @@ class DatalakeFactory:
             password = kwargs.get("password")
             host = kwargs.get("host")
             print(kwargs)
-            uri = f"{dtype}://{user}:{password}@{host}/{kwargs['database']}"
-            return SQLDatabase(uri)
+            if dtype == "postgres":
+                uri = f"postgresql://{user}:{password}@{host}/{kwargs['database']}"
+                return SQLDatabase(uri)
+            else:
+                uri = f"{dtype}://{user}:{password}@{host}/{kwargs['database']}"
+                return SQLDatabase(uri)

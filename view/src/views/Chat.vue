@@ -1,9 +1,10 @@
 <template>
-  <div class="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
+  <div class="min-h-screen bg-gray-100 py-6 flex flex-col sm:py-12">
     <div class="relative py-3 sm:max-w-xl sm:mx-auto">
       <h1 class="text-4xl font-bold text-center mb-4">Ada: The Data Engineer Assistant</h1>
       <small class="block text-center mb-8">
-        Connected to database <strong class="font-semibold">{{ database }}</strong>
+        Connected to database
+        <strong class="font-semibold">{{ database }}</strong>
       </small>
 
       <div class="dbt-visual-interface">
@@ -82,7 +83,6 @@
 
 <script setup>
 import MessageDisplay from '@/components/MessageDisplay.vue'
-import Dashboard from '@/components/Dashboard.vue'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 import io from 'socket.io-client'

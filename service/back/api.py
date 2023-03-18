@@ -1,7 +1,7 @@
 from back.models import Database, Table, TableColumn, User
 from back.session import session
 from flask import Blueprint, g, jsonify, request
-from middleware import user_middleware
+from middleware import database_middleware, user_middleware
 from sqlalchemy import or_
 
 api = Blueprint("back_api", __name__)
@@ -24,7 +24,6 @@ def get_databases():
 
 
 @api.route("/tables", methods=["GET"])
-@user_middleware
 def get_tables():
     tables = [{"schema": t._schema, "table": t._table} for t in g.datalake.tables]
     return jsonify(tables)

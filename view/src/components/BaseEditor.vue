@@ -13,7 +13,8 @@
 </template>
 
 <script setup lang="ts">
-import { defineComponent, computed, WritableComputedRef } from 'vue'
+import { defineComponent, computed } from 'vue'
+import type { WritableComputedRef } from 'vue'
 import { VAceEditor } from 'vue3-ace-editor'
 import 'brace/theme/monokai'
 import 'brace/mode/sql'

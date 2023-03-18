@@ -35,8 +35,8 @@ def emit_message(content, sender="assistant", display=True, done=False):
     emit("response", message)
 
 
-# @user_middleware
 @socketio.on("ask")
+@user_middleware
 def handle_ask(question, state=None):
     print("ask:", question, state)
     if state == 0:

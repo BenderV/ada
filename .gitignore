@@ -1,4 +1,4 @@
-service/cache
+service/.cache
 service/run.sh
 view/node_modules
 .DS_Store

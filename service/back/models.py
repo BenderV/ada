@@ -142,8 +142,9 @@ class UserOrganisation(Base):
 
 
 if __name__ == "__main__":
-    from session import DATABASE_URL
     from sqlalchemy import create_engine
+
+    from session import DATABASE_URL
 
     engine = create_engine(DATABASE_URL)
     Base.metadata.create_all(engine)
