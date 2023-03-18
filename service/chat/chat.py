@@ -1,10 +1,9 @@
 import json
 
-import diskcache
 import openai
 import requests
-
-cache = diskcache.Cache(".cache")
+from back.models import Prediction
+from back.session import session
 
 
 def parse_chat_template(filename):
@@ -32,23 +31,52 @@ def parse_chat_template(filename):
     return instruction, examples
 
 
-def hashkey(x):
-    return hash(json.dumps(x))
+def hashkey(x) -> str:
+    """Hash a list of dictionaries"""
+    return str(hash(json.dumps(x, sort_keys=True)))
 
 
+def cache_db(f):
+    def wrapper(messages):
+        """Cache on database Prediction table"""
+        key = hashkey(messages)
+        prediction = session.query(Prediction).filter_by(params_hash=key).first()
+        if prediction:
+            return {
+                "role": "assistant",
+                "content": prediction.value,
+            }
+        else:
+            response = f(messages)
+            message = response.choices[0].message
+            prediction = Prediction(
+                prompt=messages[-1]["content"],  # last message is the prompt
+                params_hash=key,
+                modelName=response.model,
+                response=response,
+                params=messages,
+                output=message["content"],
+                value=message["content"],
+            )
+            session.add(prediction)
+            session.commit()
+            return message
+
+    return wrapper
+
+
+@cache_db
 def fetch_openai(messages):
-    # check if the result is in the cache
-    if hashkey(messages) in cache:
-        return cache[hashkey(messages)]
-
-    result = openai.ChatCompletion.create(model="gpt-4-0314", messages=messages)
+    # https://platform.openai.com/docs/models/gpt-4
+    model = "gpt-4-0314"
+    # model = "gpt-4-32k"
+    # model = "gpt-3.5-turbo"
+    result = openai.ChatCompletion.create(model=model, messages=messages)
     # result = requests.post(
     #     "https://api.openai.com/v1/chat/completions",
     #     headers={"Authorization": "Bearer " + openai.api_key},
     #     json={"model": "gpt-4", "messages": messages},
     # ).json()
-    # store the result in the cache
-    cache[hashkey(messages)] = result
     return result
 
 
@@ -97,8 +125,7 @@ class ChatGPT:
         new_message = {"role": "user", "content": question}
         messages.append(new_message)
         # Add the question
-        res = fetch_openai(tuple(messages))
-        message = res.choices[0].message
+        message = fetch_openai(tuple(messages))
         self.history.append(new_message)
         self.history.append(message)
 

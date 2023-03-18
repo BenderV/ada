@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List
 
 from sqlalchemy import (
     ARRAY,
@@ -57,12 +58,64 @@ class Prediction(Base):
     id = Column(Integer, primary_key=True)
     queryId = Column(Integer, ForeignKey("query.id"))
     modelName = Column(String, nullable=False)
-    prompt = Column(String, nullable=False)
-    output = Column(String, nullable=False)
-    openAIResponse = Column(JSONB)
+    prompt = Column(String)
+    output = Column(String)
+    params = Column(JSONB)
+    response = Column(JSONB)
     value = Column(JSONB)
+    params_hash = Column(String)
 
     query = relationship("Query")
+
+
+@dataclass
+class ConversationMessage(Base):
+    __tablename__ = "conversation_message"
+
+    conversationId: int
+    role: str
+    content: str
+    data: dict
+    display: bool
+    done: bool
+
+    id = Column(Integer, primary_key=True)
+    conversationId = Column(Integer, ForeignKey("conversation.id"), nullable=False)
+    role = Column(String, nullable=False)
+    content = Column(String, nullable=False)
+    data = Column(JSONB)
+    display = Column(Boolean, nullable=False, default=True)
+    done = Column(Boolean, nullable=False, default=False)
+    createdAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
+    updatedAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
+
+    conversation = relationship("Conversation", back_populates="messages")
+
+
+@dataclass
+class Conversation(Base):
+    __tablename__ = "conversation"
+
+    id: int
+    name: str
+    ownerId: str
+    databaseId: int
+    createdAt: str
+    updatedAt: str
+    # messages: List[ConversationMessage] = field(default_factory=list)
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    ownerId = Column(String, ForeignKey("user.id"))
+    databaseId = Column(Integer, ForeignKey("database.id"), nullable=False)
+    createdAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
+    updatedAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
+
+    owner = relationship("User")
+    database = relationship("Database")
+    messages = relationship(
+        "ConversationMessage", back_populates="conversation", lazy="joined"
+    )
 
 
 class Query(Base):
@@ -142,9 +195,8 @@ class UserOrganisation(Base):
 
 
 if __name__ == "__main__":
-    from sqlalchemy import create_engine
-
     from session import DATABASE_URL
+    from sqlalchemy import create_engine
 
     engine = create_engine(DATABASE_URL)
     Base.metadata.create_all(engine)

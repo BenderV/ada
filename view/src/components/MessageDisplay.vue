@@ -5,7 +5,7 @@
   >
     <!-- if message.display = hide, then show as light gray -->
     <p class="font-bold">
-      {{ message.sender }}
+      {{ message.role }}
     </p>
 
     <template v-for="(part, index) in parsedText">
@@ -13,11 +13,7 @@
         {{ part.content }}
       </span>
       <SqlCode v-if="part.type === 'sql'" :code="part.content" :key="`sql-${index}`" />
-      <BaseTable
-        v-if="part.type === 'json'"
-        :data="JSON.parse(part.content)"
-        :key="`json-${index}`"
-      />
+      <BaseTable v-if="part.type === 'json'" :data="message.data" :key="`json-${index}`" />
     </template>
   </div>
 </template>

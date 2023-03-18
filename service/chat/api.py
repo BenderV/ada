@@ -1,9 +1,11 @@
 import json
 
+from back.datalake import DatalakeFactory
+from back.models import Conversation, ConversationMessage, Database
+from back.session import session
 from chat.chat import ChatGPT, parse_chat_template
-from flask import Blueprint, g
+from flask import Blueprint
 from flask_socketio import emit
-from middleware import user_middleware
 
 instruction, examples = parse_chat_template("chat/chat_template.txt")
 chat_gpt = ChatGPT(instruction=instruction, examples=examples)
@@ -30,19 +32,97 @@ def extract_sql(text):
         pass
 
 
-def emit_message(content, sender="assistant", display=True, done=False):
-    message = {"content": content, "sender": sender, "display": display, "done": done}
-    emit("response", message)
+def record_message(**kwargs):
+    # change lower_case keys to camelCase keys
+    def camel_case(snake_str):
+        components = snake_str.split("_")
+        return components[0] + "".join(x.title() for x in components[1:])
+
+    kwargs = {camel_case(k): v for k, v in kwargs.items()}
+    # Create a new message
+    message = ConversationMessage(**kwargs)
+    session.add(message)
+    session.commit()
+
+
+def create_conversation(name, databaseId, ownerId):
+    # Create conversation object
+    conversation = Conversation(
+        name=name,
+        ownerId="admin",
+        databaseId=databaseId,
+    )
+    session.add(conversation)
+    session.commit()
+    return conversation
+
+
+RESULT_TEMPLATE = """Here is the result of the SQL query:
+```json
+{result}
+```
+"""
+
+ERROR_TEMPLATE = """An error occurred while executing the SQL query:
+```error
+{error}
+```
+Please correct the query and try again.
+"""
 
 
 @socketio.on("ask")
-@user_middleware
-def handle_ask(question, state=None):
-    print("ask:", question, state)
-    if state == 0:
-        chat_gpt.reset()  # Reset the chatbot's memory
+def handle_ask(question, conversation_id=None):
+    # formula1
+    database = session.query(Database).filter_by(id=131).first()
+    # Add a datalake object to the request
+    datalake = DatalakeFactory.create(
+        database.engine,
+        **database.details,
+    )
 
-    question = f"In Snowflake database; {question}"
+    print("ask:", question, conversation_id)
+    if not conversation_id:
+        """
+        id = Column(Integer, primary_key=True)
+        name = Column(String, nullable=False)
+        ownerId = Column(String, ForeignKey("user.id"))
+        createdAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
+        updatedAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
+
+        """
+        # Create conversation object
+        conversation = create_conversation(
+            name=question, databaseId=database.id, ownerId="admin"
+        )
+        conversation_id = conversation.id
+        # Reset the chatbot's memory
+        chat_gpt.reset()  # Reset the chatbot's memory
+        question = f"In {datalake.engine.dialect.name} database; {question}"
+
+    user_question = {
+        "conversation_id": conversation_id,
+        "content": question,
+        "role": "user",
+        "display": True,
+        "done": False,
+    }
+    record_message(**user_question)
+
+    def emit_message(content, role="assistant", display=True, done=False, data=None):
+        # TODO: record more stuff
+
+        message = {
+            "conversation_id": conversation_id,
+            "content": content,
+            "role": role,
+            "display": display,
+            "done": done,
+        }
+        if data:
+            message["data"] = data
+        record_message(**message)
+        emit("response", message)
 
     for attempt in range(10):  # Number of attempts to ask the user for more information
         response = chat_gpt.ask(question)
@@ -58,23 +138,20 @@ def handle_ask(question, state=None):
             emit_message(response, display=False)
             try:
                 # Assuming you have a Database instance named 'database'
-                result = g.datalake.query(sql)
+                results = datalake.query(sql)
                 # Display in JSON (only the first 20 rows)
-                if len(result) > 10:
-                    result = json.dumps(result[:10], default=str) + "\n..."
+                results_limited = results[:10]
+                results_dumps = json.dumps(results_limited, default=str)
+                if len(results) > 10:
+                    results_dumps += "\n..."
 
                 # Send the result back to chat_gpt as the new question
-                question = f"""
-                    Here is the result of the SQL query:
-                    ```json
-                    {result}
-                    ```
-                """
-                emit_message(question, sender="system", display=False)
+                question = RESULT_TEMPLATE.format(result=results_dumps)
+                emit_message(
+                    question, role="system", display=False, data=results_limited
+                )
             except Exception as e:
                 # If there's an error executing the query, inform the user
-                question = f"""An error occurred while executing the SQL query: 
-                ```error
-                {e}
-                ```Please provide more information."""
-                emit_message(question, sender="system", display=False)
+                question = ERROR_TEMPLATE.format(error=str(e))
+
+                emit_message(question, role="system", display=False)

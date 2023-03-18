@@ -25,6 +25,11 @@ const routes = [
     component: Chat
   },
   {
+    path: '/chat/:id',
+    name: 'ChatById',
+    component: Chat
+  },
+  {
     path: '/upload',
     name: 'Upload',
     component: Upload

@@ -127,7 +127,7 @@
       </DisclosurePanel>
     </Disclosure>
 
-    <div class="py-10">
+    <div>
       <Suspense>
         <router-view />
       </Suspense>
