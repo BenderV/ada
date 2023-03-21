@@ -68,9 +68,11 @@ def cache_db(f):
 @cache_db
 def fetch_openai(messages):
     # https://platform.openai.com/docs/models/gpt-4
-    model = "gpt-4-0314"
+    # model = "gpt-4-0314"
+    # model = "gpt-4"
     # model = "gpt-4-32k"
-    # model = "gpt-3.5-turbo"
+    # model = "gpt-4-32k-0314"
+    model = "gpt-3.5-turbo"
     result = openai.ChatCompletion.create(model=model, messages=messages)
     # result = requests.post(
     #     "https://api.openai.com/v1/chat/completions",
@@ -111,6 +113,12 @@ class ChatGPT:
 
     def reset(self):
         self.history = []
+
+    def load_history(self, messages):
+        # Check order of messages (based on createdAt)
+        # Oldest first (createdAt ASC)
+        messages = sorted(messages, key=lambda x: x.createdAt)
+        self.history = [message.__dict__ for message in messages]
 
     def ask(self, question):
         messages = []

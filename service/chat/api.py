@@ -57,9 +57,9 @@ def create_conversation(name, databaseId, ownerId):
     return conversation
 
 
-RESULT_TEMPLATE = """Here is the result of the SQL query:
+RESULT_TEMPLATE = """Result {len_sample}/{len_total}:
 ```json
-{result}
+{sample}
 ```
 """
 
@@ -75,6 +75,10 @@ Please correct the query and try again.
 def handle_ask(question, conversation_id=None):
     # formula1
     database = session.query(Database).filter_by(id=131).first()
+    # doc
+    # database = session.query(Database).filter_by(id=34).first()
+    # snowflake
+    # database = session.query(Database).filter_by(id=152).first()
     # Add a datalake object to the request
     datalake = DatalakeFactory.create(
         database.engine,
@@ -98,7 +102,16 @@ def handle_ask(question, conversation_id=None):
         conversation_id = conversation.id
         # Reset the chatbot's memory
         chat_gpt.reset()  # Reset the chatbot's memory
-        question = f"In {datalake.engine.dialect.name} database; {question}"
+        question = f"In {datalake.dialect} database; {question}"
+    else:
+        chat_gpt.reset()  # Reset the chatbot's memory
+        # Load in chatbot's memory the previous conversation
+        messages = (
+            session.query(ConversationMessage)
+            .filter_by(conversationId=conversation_id)
+            .all()
+        )
+        chat_gpt.load_history(messages)
 
     user_question = {
         "conversation_id": conversation_id,
@@ -137,21 +150,35 @@ def handle_ask(question, conversation_id=None):
             # If the answer contains an SQL query, try to execute it
             emit_message(response, display=False)
             try:
+                MAX_DATA_SIZE = 4000  # Maximum size of the data to return
                 # Assuming you have a Database instance named 'database'
                 results = datalake.query(sql)
-                # Display in JSON (only the first 20 rows)
-                results_limited = results[:10]
-                results_dumps = json.dumps(results_limited, default=str)
-                if len(results) > 10:
-                    results_dumps += "\n..."
-
-                # Send the result back to chat_gpt as the new question
-                question = RESULT_TEMPLATE.format(result=results_dumps)
-                emit_message(
-                    question, role="system", display=False, data=results_limited
-                )
             except Exception as e:
                 # If there's an error executing the query, inform the user
                 question = ERROR_TEMPLATE.format(error=str(e))
-
                 emit_message(question, role="system", display=False)
+            else:
+                # Take every row until the total size is less than 1000 characters
+                results_limited = []
+                total_size = 0
+                for row in results:
+                    results_limited.append(row)
+                    total_size += len(json.dumps(row, default=str))
+                    if total_size > MAX_DATA_SIZE:
+                        break
+
+                # Display in JSON
+                # TODO: switch to CSV (more economical)
+                results_dumps = json.dumps(results_limited, default=str)
+                if total_size > MAX_DATA_SIZE:
+                    results_dumps += "\n..."
+
+                # Send the result back to chat_gpt as the new question
+                question = RESULT_TEMPLATE.format(
+                    sample=results_dumps,
+                    len_sample=len(results_limited),
+                    len_total=len(results),
+                )
+                emit_message(
+                    question, role="system", display=False, data=results_limited
+                )

@@ -1,5 +1,5 @@
 import json
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 
 import snowflake.connector
 import sqlalchemy
@@ -9,6 +9,10 @@ from sqlalchemy import text
 class AbstractDatabase(ABC):
     @abstractmethod
     def __init__(self):
+        pass
+
+    @abstractproperty
+    def dialect(self):
         pass
 
     @abstractmethod
@@ -34,8 +38,9 @@ class SQLDatabase:
         self.load_metadata()
 
     @property
-    def name(self):
-        return self.engine.url.database
+    def dialect(self):
+        # "postgresql", "mysql", "sqlite", "mssql"
+        return self.engine.name
 
     def load_metadata(self):
         for schema in self.inspector.get_schema_names():
@@ -118,17 +123,13 @@ class BigQueryDatabase:
 
 
 class SnowflakeDatabase(AbstractDatabase):
-    def __init__(self, account, user, password, database, schema, warehouse):
-        print("SnowflakeDatabase", account, user, password, database, schema, warehouse)
-        self.connection = snowflake.connector.connect(
-            account=account,
-            user=user,
-            password=password,
-            database=database,
-            schema=schema,
-            warehouse=warehouse,
-        )
+    def __init__(self, **kwargs):
+        self.connection = snowflake.connector.connect(**kwargs)
         self.metadata = []
+
+    @property
+    def dialect(self):
+        return "snowflake"
 
     def load_metadata(self):
         query = "SHOW TABLES IN DATABASE {}".format(self.connection.database)
@@ -191,9 +192,5 @@ class DatalakeFactory:
             password = kwargs.get("password")
             host = kwargs.get("host")
             print(kwargs)
-            if dtype == "postgres":
-                uri = f"postgresql://{user}:{password}@{host}/{kwargs['database']}"
-                return SQLDatabase(uri)
-            else:
-                uri = f"{dtype}://{user}:{password}@{host}/{kwargs['database']}"
-                return SQLDatabase(uri)
+            uri = f"{dtype}://{user}:{password}@{host}/{kwargs['database']}"
+            return SQLDatabase(uri)

@@ -35,7 +35,7 @@ class Database(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     description = Column(String)
-    engine = Column(String, nullable=False)
+    _engine = Column(String, nullable=False, name="engine")
     details = Column(JSONB, nullable=False)
     organisationId = Column(String, ForeignKey("organisation.id"))
     ownerId = Column(String, ForeignKey("user.id"))
@@ -43,6 +43,11 @@ class Database(Base):
 
     organisation = relationship("Organisation")
     owner = relationship("User")
+
+    # Hotfix for engine, "postgres" should be "postgresql"
+    @property
+    def engine(self):
+        return self._engine.replace("postgres", "postgresql")
 
 
 class Organisation(Base):
