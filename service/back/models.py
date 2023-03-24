@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     ARRAY,
     TIMESTAMP,
@@ -77,6 +78,7 @@ class Prediction(Base):
 class ConversationMessage(Base):
     __tablename__ = "conversation_message"
 
+    id: int
     conversationId: int
     role: str
     content: str
@@ -87,6 +89,7 @@ class ConversationMessage(Base):
     id = Column(Integer, primary_key=True)
     conversationId = Column(Integer, ForeignKey("conversation.id"), nullable=False)
     role = Column(String, nullable=False)
+    name = Column(String)
     content = Column(String, nullable=False)
     data = Column(JSONB)
     display = Column(Boolean, nullable=False, default=True)
@@ -95,6 +98,15 @@ class ConversationMessage(Base):
     updatedAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
 
     conversation = relationship("Conversation", back_populates="messages")
+
+    def to_openai_dict(self) -> dict:
+        res = {
+            "role": self.role,
+            "content": self.content,
+        }
+        if self.name:
+            res["name"] = self.name
+        return res
 
 
 @dataclass
@@ -121,6 +133,15 @@ class Conversation(Base):
     messages = relationship(
         "ConversationMessage", back_populates="conversation", lazy="joined"
     )
+
+    @property
+    def chat_gpt(self):
+        from chat.chat import ChatGPT, parse_chat_template
+
+        instruction, examples = parse_chat_template("chat/chat_template.txt")
+        chat_gpt = ChatGPT(instruction=instruction, examples=examples)
+        chat_gpt.load_history(self.messages)
+        return chat_gpt
 
 
 class Query(Base):
@@ -153,6 +174,7 @@ class Table(Base):
     used = Column(Boolean, nullable=False, default=True)
 
     database = relationship("Database")
+    embedding = Column(Vector(1536))
 
 
 class TableColumn(Base):
@@ -169,6 +191,7 @@ class TableColumn(Base):
     foreignTable = Column(String)
     foreignColumn = Column(String)
     examples = Column(ARRAY(String))
+    embedding = Column(Vector(1536))
 
     __table_args__ = (
         ForeignKeyConstraint(
@@ -200,8 +223,9 @@ class UserOrganisation(Base):
 
 
 if __name__ == "__main__":
-    from session import DATABASE_URL
     from sqlalchemy import create_engine
+
+    from session import DATABASE_URL
 
     engine = create_engine(DATABASE_URL)
     Base.metadata.create_all(engine)

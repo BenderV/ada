@@ -1,19 +1,18 @@
 import json
+from threading import Lock
 
 from back.datalake import DatalakeFactory
-from back.models import Conversation, ConversationMessage, Database
+from back.models import Conversation, ConversationMessage, Database, User
 from back.session import session
-from chat.chat import ChatGPT, parse_chat_template
 from flask import Blueprint
 from flask_socketio import emit
 
-instruction, examples = parse_chat_template("chat/chat_template.txt")
-chat_gpt = ChatGPT(instruction=instruction, examples=examples)
-
 api = Blueprint("chat_api", __name__)
 
-# socketio = SocketIO(cors_allowed_origins="*")
 from app import socketio
+
+conversation_stop_flags = {}
+stop_flag_lock = Lock()
 
 
 def extract_sql(text):
@@ -71,50 +70,120 @@ Please correct the query and try again.
 """
 
 
+def user_has_access(user_id: int, database_id: int) -> bool:
+    """
+    Check if a user has access to a specific database.
+
+    :param user_id: The ID of the user.
+    :param database_id: The ID of the database.
+    :return: True if the user has access, False otherwise.
+    """
+    user = session.query(User).filter_by(id=user_id).first()
+
+    if not user:
+        return False
+
+    # Assuming you have a many-to-many relationship between User and Database models
+    # Replace 'user_databases' with the appropriate attribute name from your User model
+    accessible_databases = [db.id for db in user.user_databases]
+
+    return database_id in accessible_databases
+
+
+@socketio.on("stop")
+def handle_stop(conversation_id):
+    print("Received stop signal for conversation_id", conversation_id)
+    # Stop the query
+    with stop_flag_lock:
+        if conversation_id in conversation_stop_flags:
+            conversation_stop_flags[conversation_id] = True
+            emit_status(conversation_id, STATUS.TO_STOP)
+
+        else:
+            print(
+                f"No active 'ask' process found for conversation_id {conversation_id}"
+            )
+
+
+class STATUS:
+    RUNNING = "running"
+    CLEAR = "clear"
+    TO_STOP = "to_stop"
+    ERROR = "error"
+
+
+def emit_status(conversation_id, status):
+    emit(
+        "status",
+        {
+            "conversation_id": conversation_id,
+            "status": status,
+        },
+    )
+
+
+def handle_stop_flag(func):
+    def wrapper(*args, **kwargs):
+        # Extract the conversation_id from the arguments
+        conversation_id = args[2]
+
+        with stop_flag_lock:
+            # Avoid running the same query twice
+            if conversation_id in conversation_stop_flags:
+                # We re-emit the running status to the client
+                if conversation_stop_flags[conversation_id]:
+                    emit_status(conversation_id, STATUS.TO_STOP)
+                else:
+                    emit_status(conversation_id, STATUS.RUNNING)
+                return
+
+        conversation_stop_flags[conversation_id] = False
+        emit_status(conversation_id, STATUS.RUNNING)
+        try:
+            res = func(*args, **kwargs)
+        except Exception as e:
+            emit_status(conversation_id, STATUS.ERROR)
+            raise e
+        else:
+            emit_status(conversation_id, STATUS.CLEAR)
+        finally:
+            with stop_flag_lock:
+                # Remove the stop flag
+                del conversation_stop_flags[conversation_id]
+
+        return res
+
+    return wrapper
+
+
 @socketio.on("ask")
-def handle_ask(question, conversation_id=None):
-    # formula1
-    database = session.query(Database).filter_by(id=131).first()
-    # doc
-    # database = session.query(Database).filter_by(id=34).first()
-    # snowflake
-    # database = session.query(Database).filter_by(id=152).first()
+@handle_stop_flag
+def handle_ask(question, conversation_id=None, database_id=None):
+    print("ask:", question, conversation_id, database_id)
+
+    if not conversation_id:
+        # TODO: Verify user is allowed to access database
+        # if not user_has_access(request.user, database_id):
+        #   return {"error": "User does not have access to the requested database"}
+
+        # Create conversation object
+        conversation = create_conversation(
+            name=question, databaseId=database_id, ownerId="admin"
+        )
+    else:
+        conversation = session.query(Conversation).filter_by(id=conversation_id).first()
+
+    database = conversation.database
     # Add a datalake object to the request
     datalake = DatalakeFactory.create(
         database.engine,
         **database.details,
     )
 
-    print("ask:", question, conversation_id)
-    if not conversation_id:
-        """
-        id = Column(Integer, primary_key=True)
-        name = Column(String, nullable=False)
-        ownerId = Column(String, ForeignKey("user.id"))
-        createdAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
-        updatedAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
-
-        """
-        # Create conversation object
-        conversation = create_conversation(
-            name=question, databaseId=database.id, ownerId="admin"
-        )
-        conversation_id = conversation.id
-        # Reset the chatbot's memory
-        chat_gpt.reset()  # Reset the chatbot's memory
-        question = f"In {datalake.dialect} database; {question}"
-    else:
-        chat_gpt.reset()  # Reset the chatbot's memory
-        # Load in chatbot's memory the previous conversation
-        messages = (
-            session.query(ConversationMessage)
-            .filter_by(conversationId=conversation_id)
-            .all()
-        )
-        chat_gpt.load_history(messages)
+    question = f"In {datalake.dialect} database; {question}"
 
     user_question = {
-        "conversation_id": conversation_id,
+        "conversation_id": conversation.id,
         "content": question,
         "role": "user",
         "display": True,
@@ -126,7 +195,7 @@ def handle_ask(question, conversation_id=None):
         # TODO: record more stuff
 
         message = {
-            "conversation_id": conversation_id,
+            "conversation_id": conversation.id,
             "content": content,
             "role": role,
             "display": display,
@@ -138,7 +207,11 @@ def handle_ask(question, conversation_id=None):
         emit("response", message)
 
     for attempt in range(10):  # Number of attempts to ask the user for more information
-        response = chat_gpt.ask(question)
+        # Check if the user has stopped the query
+        if conversation_stop_flags.get(conversation_id):
+            return
+
+        response = conversation.chat_gpt.ask(question)
         sql = extract_sql(response)
 
         if "DONE" in response:  # Check if the response contains "DONE"

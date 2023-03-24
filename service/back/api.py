@@ -58,7 +58,20 @@ def get_conversation(conversation_id):
     # TODO: redesign this to use a single query
     conversation_dict = dataclass_to_dict(conversation)
     conversation_dict["messages"] = dataclass_to_dict(conversation.messages)
+    conversation_dict["messages"].sort(key=lambda x: x["id"])
     return jsonify(conversation_dict)
+
+
+@api.route("/conversations/<int:conversation_id>", methods=["DELETE"])
+@user_middleware
+def delete_conversation(conversation_id):
+    # Delete conversation and all related messages
+    session.query(ConversationMessage).filter_by(
+        conversationId=conversation_id
+    ).delete()
+    session.query(Conversation).filter_by(id=conversation_id).delete()
+    session.commit()
+    return jsonify({"success": True})
 
 
 @api.route("/databases", methods=["GET"])
@@ -75,20 +88,6 @@ def get_databases():
         .all()
     )
     return jsonify(databases)
-
-
-@api.route("/tables", methods=["GET"])
-def get_tables():
-    # formula1
-    database = session.query(Database).filter_by(id=131).first()
-    # Add a datalake object to the request
-    datalake = DatalakeFactory.create(
-        database.engine,
-        **database.details,
-    )
-
-    tables = [{"schema": t._schema, "table": t._table} for t in datalake.tables]
-    return jsonify(tables)
 
 
 @api.route("/databases/<int:database_id>/schema", methods=["GET"])

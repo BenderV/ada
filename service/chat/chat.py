@@ -1,8 +1,8 @@
 import json
+import typing
 
 import openai
-import requests
-from back.models import Prediction
+from back.models import ConversationMessage as Message
 from back.session import session
 
 
@@ -37,9 +37,13 @@ def hashkey(x) -> str:
 
 
 def cache_db(f):
-    def wrapper(messages):
+    def wrapper(messages: list[Message]) -> dict:
+        from back.models import Prediction
+
+        messages_dict = [m.to_openai_dict() for m in messages]
+
         """Cache on database Prediction table"""
-        key = hashkey(messages)
+        key = hashkey(messages_dict)
         prediction = session.query(Prediction).filter_by(params_hash=key).first()
         if prediction:
             return {
@@ -47,14 +51,14 @@ def cache_db(f):
                 "content": prediction.value,
             }
         else:
-            response = f(messages)
+            response = f(messages_dict)
             message = response.choices[0].message
             prediction = Prediction(
-                prompt=messages[-1]["content"],  # last message is the prompt
+                prompt=messages_dict[-1]["content"],  # last message is the prompt
                 params_hash=key,
                 modelName=response.model,
                 response=response,
-                params=messages,
+                params=messages_dict,
                 output=message["content"],
                 value=message["content"],
             )
@@ -66,13 +70,13 @@ def cache_db(f):
 
 
 @cache_db
-def fetch_openai(messages):
+def fetch_openai(messages: list[dict]) -> dict:
     # https://platform.openai.com/docs/models/gpt-4
-    # model = "gpt-4-0314"
+    model = "gpt-4-0314"
     # model = "gpt-4"
     # model = "gpt-4-32k"
     # model = "gpt-4-32k-0314"
-    model = "gpt-3.5-turbo"
+    # model = "gpt-3.5-turbo"
     result = openai.ChatCompletion.create(model=model, messages=messages)
     # result = requests.post(
     #     "https://api.openai.com/v1/chat/completions",
@@ -84,41 +88,51 @@ def fetch_openai(messages):
 
 class ChatGPT:
     def __init__(self, instruction=None, examples=[]):
-        self.pre_history = []
-        self.history = []
-        self.instruction = instruction
+        self.pre_history: list[Message] = []
+        self.history: list[Message] = []
+        self.instruction: typing.Optional[str] = instruction
         self.examples = examples
 
         if self.instruction:
-            self.pre_history.append({"role": "system", "content": self.instruction})
+            self.pre_history.append(
+                Message(**{"role": "system", "content": self.instruction})
+            )
 
         # Loop, 2 by 2, over the examples
         for i in range(0, len(self.examples), 2):
             self.pre_history.append(
-                {"role": "system", "name": "example_user", "content": self.examples[i]}
+                Message(
+                    **{
+                        "role": "system",
+                        "name": "example_user",
+                        "content": self.examples[i],
+                    }
+                )
             )
             self.pre_history.append(
-                {
-                    "role": "system",
-                    "name": "example_assistant",
-                    "content": self.examples[i + 1],
-                }
+                Message(
+                    **{
+                        "role": "system",
+                        "name": "example_assistant",
+                        "content": self.examples[i + 1],
+                    }
+                )
             )
 
     @property
     def last_message(self):
         if not self.history:
             return None
-        return self.history[-1]["content"]
+        return self.history[-1].content
 
     def reset(self):
         self.history = []
 
-    def load_history(self, messages):
+    def load_history(self, messages: list[Message]):
         # Check order of messages (based on createdAt)
         # Oldest first (createdAt ASC)
         messages = sorted(messages, key=lambda x: x.createdAt)
-        self.history = [message.__dict__ for message in messages]
+        self.history = [message for message in messages]
 
     def ask(self, question):
         messages = []
@@ -130,12 +144,13 @@ class ChatGPT:
         for message in self.history:
             messages.append(message)
 
-        new_message = {"role": "user", "content": question}
+        new_message = Message(**{"role": "user", "content": question})
         messages.append(new_message)
         # Add the question
+
         message = fetch_openai(tuple(messages))
         self.history.append(new_message)
         self.history.append(message)
 
         # print(message['content'])
-        return message["content"]
+        return message.content
