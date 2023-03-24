@@ -15,12 +15,12 @@
                 :key="item.name"
                 :to="item.href"
                 :class="[
-                  item.href == currentPath
+                  isRouteActive(item.href)
                     ? 'border-indigo-500 text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
                   'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium'
                 ]"
-                :aria-current="item.href == currentPath ? 'page' : undefined"
+                :aria-current="isRouteActive(item.href) ? 'page' : undefined"
               >
                 {{ item.name }}
               </router-link>
@@ -151,6 +151,10 @@ import { BellIcon, XMarkIcon, Bars3Icon } from '@heroicons/vue/24/outline'
 import { client, user, logout } from '../stores/client'
 const route = useRoute()
 const currentPath = computed(() => route.path)
+
+const isRouteActive = (path: string) => {
+  return path === currentPath.value || (path === '/chat' && currentPath.value.startsWith('/chat'))
+}
 
 const navigation = [
   { name: 'Query', href: '/' },
