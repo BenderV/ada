@@ -11,7 +11,7 @@
         :key="conversation.id"
         @click.stop="selectConversation(conversation)"
       >
-        <div @click="selectConversation(conversation)">
+        <div @click="selectConversation(conversation)" class="truncate">
           {{ conversation.name }}
         </div>
         <button @click.stop="deleteConversation(conversation.id)" class="text-grey-500">

@@ -74,6 +74,24 @@ def delete_conversation(conversation_id):
     return jsonify({"success": True})
 
 
+@api.route("/databases", methods=["POST"])
+@user_middleware
+def create_database():
+    # Create a new database
+    database = Database(
+        name=request.json["name"],
+        description=request.json["description"],
+        _engine=request.json["engine"],
+        details=request.json["details"],
+        # organisationId=request.json["organisationId"],
+        ownerId=g.user.id,
+    )
+
+    session.add(database)
+    session.commit()
+    return jsonify(database)
+
+
 @api.route("/databases", methods=["GET"])
 @user_middleware
 def get_databases():

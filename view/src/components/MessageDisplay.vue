@@ -9,7 +9,7 @@
     </p>
 
     <template v-for="(part, index) in parsedText">
-      <span v-if="part.type === 'text'" :key="`text-${index}`">
+      <span style="white-space: pre-wrap" v-if="part.type === 'text'" :key="`text-${index}`">
         {{ part.content }}
       </span>
       <SqlCode v-if="part.type === 'sql'" :code="part.content" :key="`sql-${index}`" />

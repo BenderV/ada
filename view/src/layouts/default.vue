@@ -159,8 +159,8 @@ const isRouteActive = (path: string) => {
 const navigation = [
   { name: 'Query', href: '/' },
   // { name: "Upload", href: "/upload" },
-  { name: 'Chat', href: '/chat' }
-  // { name: "Databases", href: "/databases" },
+  { name: 'Chat', href: '/chat' },
+  { name: 'Databases', href: '/databases' }
 ]
 const userNavigation = [
   { name: 'Your Profile', click: client.redirectToAccountPage },

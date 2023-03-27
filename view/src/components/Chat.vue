@@ -14,7 +14,7 @@
             placeholder="Select a database"
             :disabled="conversationId"
           />
-
+          <br />
           <div class="flex items-center justify-between mb-4 pl-2" v-if="hasHiddenMessages">
             <BaseSwitch v-model="showHiddenMessages" class="float-right">
               <span class="text-gray-700">Show hidden messages</span>
@@ -30,15 +30,19 @@
             </li>
           </ul>
         </div>
-        <!-- Add stop button, centered, displayed only if a query is running -->
+
         <div class="w-full py-8">
           <div class="w-full flex justify-center">
-            queryStatus: {{ queryStatus }}
             <!-- Display error message if queryStatus is error -->
             <div v-if="queryStatus === 'error'">
-              <p class="text-red-500">Error: {{ queryStatus }}</p>
+              <p class="text-red-500">{{ errorMessage }}</p>
+            </div>
+            <!-- Display Regenerating button if query is not running and last message is not a query -->
+            <div v-else-if="queryStatus == STATUS.TO_STOP && lastMessage?.type !== 'query'">
+              <BaseButton @click="regenerate">Regenerate</BaseButton>
             </div>
 
+            <!-- Add stop button, centered, displayed only if a query is running -->
             <button
               @click="stopQuery"
               v-if="queryStatus === 'running'"
@@ -80,12 +84,14 @@ import MessageDisplay from '@/components/MessageDisplay.vue'
 import BaseInput from '@/components/BaseInput.vue'
 import BaseSwitch from '@/components/BaseSwitch.vue'
 import BaseSelector from '@/components/BaseSelector.vue'
+import BaseButton from '@/components/BaseButton.vue'
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 import io from 'socket.io-client'
 import { useDatabases } from '@/stores/databases'
 import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
+import { HiOutlineRefreshIcon } from '@heroicons/vue/24/solid'
 
 const route = useRoute()
 const router = useRouter()
@@ -93,11 +99,20 @@ const socket = io('/')
 
 const { databaseSelected, databases, selectDatabaseById } = useDatabases()
 
-const queryInput = ref('Show me the youngest driver')
+const STATUS = {
+  RUNNING: 'running',
+  CLEAR: 'clear',
+  TO_STOP: 'to_stop',
+  ERROR: 'error'
+}
+
+const queryInput = ref('')
 const messages = ref([])
 const showHiddenMessages = ref(true)
 const conversationId = computed(() => route.params.id)
-const queryStatus = ref('')
+const queryStatus = ref(STATUS.CLEAR)
+const errorMessage = ref('')
+const lastMessage = computed(() => messages.value[messages.value.length - 1])
 
 const fetchMessages = async () => {
   // Replace with your dbt API endpoint to fetch messages.
@@ -129,6 +144,11 @@ const hasHiddenMessages = computed(() => {
   return messages.value.some((message) => message.display === false)
 })
 
+const regenerate = async () => {
+  // Replace with your dbt API endpoint to regenerate the conversation.
+  console.log('Regenerate')
+}
+
 const sendMessage = async () => {
   // Post in json format to your back-end API endpoint to get the response.
   const question = queryInput.value
@@ -156,25 +176,25 @@ const handleEnter = (event) => {
   }
 }
 
-const Status = {
-  RUNNING: 'running',
-  CLEAR: 'clear',
-  TO_STOP: 'to_stop',
-  ERROR: 'error'
-}
-
-const updateStatus = (status) => {
+const updateStatus = (status, error) => {
+  if (status === STATUS.ERROR) {
+    errorMessage.value = error
+  } else {
+    errorMessage.value = ''
+  }
   queryStatus.value = status
 }
 
 onMounted(async () => {
-  await fetchMessages()
+  if (conversationId.value) {
+    await fetchMessages()
+  }
   socket.on('response', (response) => {
     receiveMessage(response)
   })
 
   socket.on('status', (response) => {
-    updateStatus(response.status)
+    updateStatus(response.status, response?.error)
   })
 })
 onUnmounted(() => {

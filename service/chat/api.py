@@ -112,13 +112,10 @@ class STATUS:
     ERROR = "error"
 
 
-def emit_status(conversation_id, status):
+def emit_status(conversation_id, status, error=None):
     emit(
         "status",
-        {
-            "conversation_id": conversation_id,
-            "status": status,
-        },
+        {"conversation_id": conversation_id, "status": status, "error": str(error)},
     )
 
 
@@ -142,7 +139,7 @@ def handle_stop_flag(func):
         try:
             res = func(*args, **kwargs)
         except Exception as e:
-            emit_status(conversation_id, STATUS.ERROR)
+            emit_status(conversation_id, STATUS.ERROR, e)
             raise e
         else:
             emit_status(conversation_id, STATUS.CLEAR)
