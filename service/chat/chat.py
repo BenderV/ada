@@ -46,10 +46,12 @@ def cache_db(f):
         key = hashkey(messages_dict)
         prediction = session.query(Prediction).filter_by(params_hash=key).first()
         if prediction:
-            return {
-                "role": "assistant",
-                "content": prediction.value,
-            }
+            return Message(
+                **{
+                    "role": "assistant",
+                    "content": prediction.value,
+                }
+            )
         else:
             response = f(messages_dict)
             message = response.choices[0].message
@@ -69,6 +71,29 @@ def cache_db(f):
     return wrapper
 
 
+def debug(f):
+    def wrapper(messages: list[Message]) -> dict:
+        last_message = messages[-1]
+        if last_message.content.startswith("SQL2"):
+            return Message(
+                role="assistant",
+                content=f'DEBUG MODE (msg: {len(messages)})\n ```sql\nSELECT 1 AS "a", \'lol\' AS "b"```\n```sql\nSELECT 2 AS "a", \'lol2\' AS "b"```',
+            )
+        elif last_message.content.startswith("SQL"):
+            return Message(
+                role="assistant",
+                content=f'DEBUG MODE (msg: {len(messages)})\n ```sql\nSELECT 1 AS "a", \'lol\' AS "b"```',
+            )
+
+        return Message(
+            role="assistant",
+            content=f"DEBUG MODE (msg: {len(messages)})\nMessage not sent to OpenAI",
+        )
+
+    return wrapper
+
+
+@debug
 @cache_db
 def fetch_openai(messages: list[dict]) -> dict:
     # https://platform.openai.com/docs/models/gpt-4
@@ -103,21 +128,22 @@ class ChatGPT:
             self.pre_history.append(
                 Message(
                     **{
-                        "role": "system",
+                        "role": "user" if i == 0 else "assistant",
                         "name": "example_user",
                         "content": self.examples[i],
                     }
                 )
             )
-            self.pre_history.append(
-                Message(
-                    **{
-                        "role": "system",
-                        "name": "example_assistant",
-                        "content": self.examples[i + 1],
-                    }
+            if i * 2 + 1 < len(self.examples):  # TO change
+                self.pre_history.append(
+                    Message(
+                        **{
+                            "role": "system",
+                            "name": "example_assistant",
+                            "content": self.examples[i + 1],
+                        }
+                    )
                 )
-            )
 
     @property
     def last_message(self):
@@ -134,7 +160,7 @@ class ChatGPT:
         messages = sorted(messages, key=lambda x: x.createdAt)
         self.history = [message for message in messages]
 
-    def ask(self, question):
+    def ask(self, question=None):
         messages = []
 
         for message in self.pre_history:
@@ -144,13 +170,13 @@ class ChatGPT:
         for message in self.history:
             messages.append(message)
 
-        new_message = Message(**{"role": "user", "content": question})
-        messages.append(new_message)
-        # Add the question
+        if question:
+            # Add the question
+            new_message = Message(**{"role": "user", "content": question})
+            messages.append(new_message)
+            self.history.append(new_message)  # Add the question to the history
 
-        message = fetch_openai(tuple(messages))
-        self.history.append(new_message)
-        self.history.append(message)
+        response = fetch_openai(tuple(messages))
+        self.history.append(response)
 
-        # print(message['content'])
-        return message.content
+        return response.content

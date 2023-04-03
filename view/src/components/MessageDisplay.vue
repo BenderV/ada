@@ -13,7 +13,7 @@
         {{ part.content }}
       </span>
       <SqlCode v-if="part.type === 'sql'" :code="part.content" :key="`sql-${index}`" />
-      <BaseTable v-if="part.type === 'json'" :data="message.data" :key="`json-${index}`" />
+      <BaseTable v-if="part.type === 'json'" :data="part.content" :key="`json-${index}`" />
     </template>
   </div>
 </template>
@@ -50,7 +50,7 @@ export default {
 
         parts.push({
           type: match[0].includes('sql') ? 'sql' : 'json',
-          content: match[1].trim()
+          content: match[0].includes('json') ? JSON.parse(match[1].trim()) : match[1].trim()
         })
 
         lastIndex = match.index + match[0].length

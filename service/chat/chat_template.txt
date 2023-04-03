@@ -22,7 +22,7 @@ FROM information_schema.tables
 WHERE table_schema NOT IN ('pg_catalog', 'information_schema');
 ```
 
-## user
+## system
 
 "table_schema","table_name"
 "public","station"
@@ -39,7 +39,7 @@ WHERE table_name = 'station'
 AND table_schema = 'public';
 ```
 
-## user
+## system
 
 "column_name","data_type","is_nullable","column_default"
 "id","integer","NO",
@@ -60,7 +60,7 @@ FROM public.station
 GROUP BY city
 ```
 
-## user
+## system
 
 "city","count"
 "Palo Alto",5
@@ -79,7 +79,7 @@ FROM public.station
 WHERE city = 'San Jose' AND date_part('year', installation_date) = 2012;
 ```
 
-## user
+## system
 
 ERROR: function date_part(unknown, text) does not exist
 LINE 3: WHERE city = 'San Jose' AND date_part('year', installation_d...
@@ -97,7 +97,7 @@ ORDER BY RANDOM()
 LIMIT 5;
 ```
 
-## user
+## system
 
 "installation_date"
 "8/6/2013"
@@ -113,7 +113,25 @@ Ok the correct query should be
 ```sql
 SELECT *
 FROM public.station
-WHERE city = 'San Jose' AND EXTRACT(YEAR FROM "installation_date"::date) = 2013;
+WHERE city = 'San Jose' AND EXTRACT(YEAR FROM "installation_date"::date) = 2012;
 ```
+
+## system 
+
+"id","name","lat","long","dock_count","city","installation_date"
+2,"San Jose Diridon Caltrain Station",37.329732,-121.901782000000011405,27,"San Jose","8/6/2012"
+3,"San Jose Civic Center",37.330698,-121.888979,15,"San Jose","8/5/2012"
+4,"Santa Clara at Almaden",37.333988,-121.894902,11,"San Jose","8/6/2012"
+5,"Adobe on Almaden",37.331415,-121.8932,19,"San Jose","8/5/2012"
+6,"San Pedro Square",37.3367210000000042673,-121.894074,15,"San Jose","8/7/2012"
+
+## assistant
+
+Ok. They have been 6 station in San Jose:
+- San Jose Diridon Caltrain Station
+- San Jose Civic Center
+- Santa Clara at Almaden
+- Adobe on Almaden
+- San Pedro Square
 
 DONE

@@ -61,6 +61,7 @@
           <textarea
             @input="resizeTextarea"
             @keyup.enter="handleEnter"
+            ref="inputTextarea"
             class="flex-grow py-2 px-3 rounded border border-gray-300"
             rows="1"
             placeholder="Type your message"
@@ -92,6 +93,7 @@ import { useDatabases } from '@/stores/databases'
 import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { HiOutlineRefreshIcon } from '@heroicons/vue/24/solid'
+import { nextTick } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -153,6 +155,7 @@ const sendMessage = async () => {
   // Post in json format to your back-end API endpoint to get the response.
   const question = queryInput.value
   queryInput.value = ''
+  resizeTextarea()
   // Emit ask question and messages.length to the server.
   socket.emit('ask', question, conversationId.value, databaseSelected.value.id)
   messages.value.push({ role: 'user', content: question })
@@ -201,9 +204,13 @@ onUnmounted(() => {
   socket.disconnect()
 })
 
-const resizeTextarea = (event) => {
-  event.target.style.height = 'auto'
-  event.target.style.height = event.target.scrollHeight + 'px'
+const inputTextarea = ref(null)
+const resizeTextarea = () => {
+  // Wait for next tick to get the updated DOM.
+  nextTick(() => {
+    inputTextarea.value.style.height = 'auto'
+    inputTextarea.value.style.height = inputTextarea.value.scrollHeight + 'px'
+  })
 }
 </script>
 

@@ -122,7 +122,7 @@ class Conversation(Base):
     # messages: List[ConversationMessage] = field(default_factory=list)
 
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
+    name = Column(String)
     ownerId = Column(String, ForeignKey("user.id"))
     databaseId = Column(Integer, ForeignKey("database.id"), nullable=False)
     createdAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
@@ -133,15 +133,6 @@ class Conversation(Base):
     messages = relationship(
         "ConversationMessage", back_populates="conversation", lazy="joined"
     )
-
-    @property
-    def chat_gpt(self):
-        from chat.chat import ChatGPT, parse_chat_template
-
-        instruction, examples = parse_chat_template("chat/chat_template.txt")
-        chat_gpt = ChatGPT(instruction=instruction, examples=examples)
-        chat_gpt.load_history(self.messages)
-        return chat_gpt
 
 
 class Query(Base):
@@ -223,9 +214,8 @@ class UserOrganisation(Base):
 
 
 if __name__ == "__main__":
-    from sqlalchemy import create_engine
-
     from session import DATABASE_URL
+    from sqlalchemy import create_engine
 
     engine = create_engine(DATABASE_URL)
     Base.metadata.create_all(engine)

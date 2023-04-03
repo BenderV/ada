@@ -76,6 +76,9 @@ class SQLDatabase:
             self.tables.append(SQLTable(self, table_metadata))
 
     def query(self, query):
+        """
+        TODO: Query and fetch only the first 1000 rows, but return the total count
+        """
         with self.engine.connect() as connection:
             return [
                 dict(r._mapping) for r in connection.execute(text(query)).fetchall()

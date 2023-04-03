@@ -40,9 +40,13 @@ const router = useRouter()
 
 const conversations: Ref<Conversation[]> = ref([])
 
-conversations.value = await axios
-  .get('/api/conversations')
-  .then((res) => res.data.sort((a, b) => b.id - a.id))
+const fetchConversations = async () => {
+  conversations.value = await axios
+    .get('/api/conversations')
+    .then((res) => res.data.sort((a, b) => b.id - a.id))
+}
+
+await fetchConversations()
 
 const selectNewConversation = () => {
   router.push({ path: '/chat' })
@@ -51,6 +55,11 @@ const selectNewConversation = () => {
 const selectConversation = (conversation: Conversation) => {
   router.push({ path: `/chat/${conversation.id}` })
 }
+
+// On route change, fetch the conversation data
+router.afterEach(async () => {
+  await fetchConversations()
+})
 
 const deleteConversation = async (id: number) => {
   await axios.delete(`/api/conversations/${id}`)
