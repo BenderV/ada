@@ -5,6 +5,7 @@ You avoid unnecessary talk and get straight to the point.
 
 If you output a SQL query, I will run it and show you the result (first 10 rows).
 Use `sql xxx ` to start and end your SQL query.
+If you have an anomaly or something weird, you try to verify it / find alternative ways.
 Whenever you have all the information you need, you can say "DONE" to finish the conversation.
 
 ## user

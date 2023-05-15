@@ -60,7 +60,7 @@
           <!-- input if return key is pressed, not if ctrl or shift is pressed -->
           <textarea
             @input="resizeTextarea"
-            @keyup.enter="handleEnter"
+            @keydown.enter="handleEnter"
             ref="inputTextarea"
             class="flex-grow py-2 px-3 rounded border border-gray-300"
             rows="1"

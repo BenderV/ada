@@ -100,8 +100,19 @@ def run_query_by_id(query_id):
         **database.details,
     )
 
-    # validatedSQL
-    result = datalake.query(query.validatedSQL or "SELECT 1")
+    #
+    # sql is validatedSQL or first result from choices
+    sql = query.validatedSQL or query.result["choices"][0]["text"].strip()
+    result = datalake.query(sql)
 
     count = len(result)
-    return jsonify({"rows": result[:50], "count": count})
+    return jsonify(
+        {
+            "rows": result[:50],
+            "count": count,
+            "databaseId": databaseId,
+            "query": query.query,
+            "sql": sql,
+            "validatedSQL": query.validatedSQL,
+        }
+    )

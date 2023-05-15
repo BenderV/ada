@@ -24,7 +24,7 @@ def parse_chat_template(filename):
 
     for message in messages:
         # If first message role is a system message, extract the example
-        if message[0] == "system":
+        if message[0] == "system" and not instruction:
             instruction = message[1]
         else:
             examples.append(message[1])
@@ -93,13 +93,13 @@ def debug(f):
     return wrapper
 
 
-@debug
+# @debug
 @cache_db
 def fetch_openai(messages: list[dict]) -> dict:
     # https://platform.openai.com/docs/models/gpt-4
-    model = "gpt-4-0314"
+    # model = "gpt-4-0314"
     # model = "gpt-4"
-    # model = "gpt-4-32k"
+    model = "gpt-4-32k"
     # model = "gpt-4-32k-0314"
     # model = "gpt-3.5-turbo"
     result = openai.ChatCompletion.create(model=model, messages=messages)

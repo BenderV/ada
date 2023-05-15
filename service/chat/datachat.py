@@ -21,7 +21,6 @@ def format_message(**kwargs):
 class DatabaseChat:
     def __init__(self, database_id, conversation_id=None, stop_flags=None):
         if not conversation_id:
-
             # Create conversation object
             self.conversation = self._create_conversation(databaseId=database_id)
         else:
@@ -72,11 +71,16 @@ class DatabaseChat:
 
     @property
     def chat_gpt(self):
-
         instruction, examples = parse_chat_template("chat/chat_template.txt")
         chat_gpt = ChatGPT(instruction=instruction, examples=examples)
 
         messages = self.conversation.messages
+        messages[0].content = (
+            "In PostgreSQL database "
+            + self.conversation.database.name
+            + ", "
+            + messages[0].content
+        )
         chat_gpt.load_history(messages)
         return chat_gpt
 
@@ -95,7 +99,8 @@ class DatabaseChat:
 
     def ask(self, question):
         self._record_message(question, role="user")
-        self.conversation.name = question
+        if not self.conversation.name:
+            self.conversation.name = question
 
         for attempt in range(CONVERSATION_MAX_ATTEMPT):
             # Check if the user has stopped the query
