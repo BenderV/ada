@@ -1,5 +1,5 @@
 <template>
-  <Form @submit="clickSave" class="max-w-7xl mx-auto">
+  <Form @submit="clickSave" class="max-w-7xl mx-auto px-4">
     <nav class="flex items-center justify-between px-4 sm:px-0">
       <div class="-mt-px flex w-0 flex-1">
         <a

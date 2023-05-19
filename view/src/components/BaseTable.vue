@@ -43,3 +43,9 @@ onMounted(() => {
   })
 })
 </script>
+<style>
+.tabulator .tabulator-footer .tabulator-page.active {
+  color: black;
+  background-color: #f3f4f6;
+}
+</style>

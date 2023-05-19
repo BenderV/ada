@@ -9,13 +9,16 @@ import VueFusionCharts from 'vue-fusioncharts'
 import FusionCharts from 'fusioncharts'
 import Charts from 'fusioncharts/fusioncharts.charts'
 import FusionTheme from 'fusioncharts/themes/fusioncharts.theme.fusion'
+import piniaPluginPersistedState from 'pinia-plugin-persistedstate'
 
 import router from './router'
 
 import './assets/main.css'
 
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia()
+pinia.use(piniaPluginPersistedState)
+app.use(pinia)
 app.use(router)
 // eslint-disable-next-line vue/component-definition-name-casing
 app.component('layout-default', LayoutDefault)

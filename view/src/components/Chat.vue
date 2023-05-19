@@ -16,7 +16,11 @@
           />
           <br />
           <div class="flex items-center justify-between mb-4 pl-2" v-if="hasHiddenMessages">
-            <BaseSwitch v-model="showHiddenMessages" class="float-right">
+            <BaseSwitch
+              :modelValue="config.showHiddenMessages"
+              @update:modelValue="config.updateShowHiddenMessages"
+              class="float-right"
+            >
               <span class="text-gray-700">Show hidden messages</span>
             </BaseSwitch>
           </div>
@@ -95,6 +99,9 @@ import { useDatabases } from '@/stores/databases'
 import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { HiOutlineRefreshIcon } from '@heroicons/vue/24/solid'
+import { useConfigStore } from '@/stores/config'
+
+const config = useConfigStore()
 
 const route = useRoute()
 const router = useRouter()
@@ -112,7 +119,6 @@ const STATUS = {
 
 const queryInput = ref('')
 const messages = ref([])
-const showHiddenMessages = ref(true)
 const conversationId = computed(() => route.params.id)
 const queryStatus = ref(STATUS.CLEAR)
 const errorMessage = ref('')
