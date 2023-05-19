@@ -74,13 +74,7 @@
             placeholder="Type your message"
             v-model="queryInput"
           ></textarea>
-          <button
-            @click="sendMessage"
-            class="w-24 bg-blue-500 text-white py-2 px-4 rounded ml-2"
-            type="submit"
-          >
-            Send
-          </button>
+          <BaseButton class="w-24 ml-2" @click="sendMessage">Send</BaseButton>
         </div>
       </div>
     </div>
@@ -166,6 +160,7 @@ const sendMessage = async () => {
   // Emit ask question and messages.length to the server.
   socket.emit('ask', question, conversationId.value, databaseSelected.value.id)
   messages.value.push({ role: 'user', content: question })
+  clearInput()
 }
 
 const receiveMessage = async (message) => {

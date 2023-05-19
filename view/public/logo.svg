@@ -1,10 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="217px" height="100px" viewBox="0 0 217 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <title>logo</title>
-    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" fill-opacity="0.936188811" font-family="Dosis-Bold, Dosis" font-size="72" font-weight="bold">
-        <text id="0lympe" fill="#000000">
-            <tspan x="0" y="74">0</tspan>
-            <tspan x="40.248" y="74" font-family="Dosis-Medium, Dosis" font-weight="400">lympe</tspan>
-        </text>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-infinity" width="250px" height="250px" viewBox="0 0 24 24" stroke-width="0.88" stroke="rgba(255, 255, 255, 1)" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="0" y="0" width="100%" height="100%" stroke="none" stroke-width="0" fill="rgba(37, 99, 235, 1)" rx="5" ry="5"/><g transform="translate(0.24, 0.24) scale(0.98)"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9.828 9.172a4 4 0 1 0 0 5.656a10 10 0 0 0 2.172 -2.828a10 10 0 0 1 2.172 -2.828a4 4 0 1 1 0 5.656a10 10 0 0 1 -2.172 -2.828a10 10 0 0 0 -2.172 -2.828"/></g>
+  
+  
 </svg>

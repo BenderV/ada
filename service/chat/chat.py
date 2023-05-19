@@ -101,7 +101,7 @@ def fetch_openai(messages: list[dict]) -> dict:
     # model = "gpt-4"
     # model = "gpt-4-32k"
     # model = "gpt-4-32k-0314"
-    # model = "gpt-3.5-turbo"
+    model = "gpt-3.5-turbo"
     result = openai.ChatCompletion.create(model=model, messages=messages)
     # result = requests.post(
     #     "https://api.openai.com/v1/chat/completions",
@@ -135,30 +135,6 @@ class ChatGPT:
                     }
                 )
             )
-
-        # Loop, 2 by 2, over the examples
-        # for i in range(0, len(self.examples), 2):
-        #     self.pre_history.append(
-        #         Message(
-        #             **{
-        #                 "role": "user"
-        #                 if i % 2 == 0
-        #                 else "system",  #  == 0 else "assistant",
-        #                 "name": "example_user",
-        #                 "content": self.examples[i],
-        #             }
-        #         )
-        #     )
-        #     if i * 2 + 1 < len(self.examples):  # TO change
-        #         self.pre_history.append(
-        #             Message(
-        #                 **{
-        #                     "role": "system",
-        #                     "name": "example_assistant",
-        #                     "content": self.examples[i + 1],
-        #                 }
-        #             )
-        #         )
 
     @property
     def last_message(self):

@@ -1,7 +1,7 @@
 <template>
   <div
-    class="message-display p-4 mb-4 rounded-lg bg-gray-200"
-    :class="{ 'bg-gray-400': message.display === false }"
+    class="message-display p-4 mb-4 rounded-lg bg-gray-100"
+    :class="{ 'bg-gray-200': message.display === false }"
   >
     <!-- if message.display = hide, then show as light gray -->
     <p class="font-bold">

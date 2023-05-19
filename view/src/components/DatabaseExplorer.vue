@@ -15,7 +15,7 @@
         <div href="#" class="block hover:bg-gray-50">
           <div class="px-4 py-4 sm:px-6">
             <div class="flex items-center justify-between">
-              <div class="text-sm font-medium text-indigo-600 truncate">
+              <div class="text-sm font-medium text-blue-600 truncate">
                 {{ table.name }}
               </div>
             </div>

@@ -5,7 +5,7 @@
       :type="type"
       v-model="model"
       :placeholder="placeholder"
-      class="block w-full max-w-lg rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+      class="block w-full max-w-lg rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
       :rules="rules"
     />
     <ErrorMessage :name="name" class="sm:text-sm text-red-400" />

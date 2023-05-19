@@ -1,6 +1,6 @@
 <template>
   <v-ace-editor
-    class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md pb-32"
+    class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md pb-32"
     v-model:value="inputText"
     lang="sql"
     mode="sql"
