@@ -1,6 +1,6 @@
 <template>
   <BaseTabs :tabs="options" :selected="outputType" @change="updateType" />
-  <div v-if="outputType == 'Value'">
+  <div v-if="outputType == 'Value'" class="text-center text-4xl py-16">
     {{ getUniqueValueOfTable }}
   </div>
   <BaseTable v-if="outputType == 'Table'" :data="data2"></BaseTable>

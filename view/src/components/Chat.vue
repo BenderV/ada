@@ -53,7 +53,7 @@
               @click="stopQuery"
               v-if="queryStatus === 'running'"
               :disabled="queryStatus === 'to_stop'"
-              class="w-24 bg-red-500 text-white py-2 px-4 rounded ml-2"
+              class="w-24 bg-gray-500 text-white py-2 px-4 rounded ml-2"
               type="submit"
             >
               Stop
@@ -67,6 +67,7 @@
           <textarea
             @input="resizeTextarea"
             @keydown.enter="handleEnter"
+            @keyup.enter="clearInput"
             ref="inputTextarea"
             class="flex-grow py-2 px-3 rounded border border-gray-300"
             rows="1"
@@ -162,8 +163,6 @@ const regenerate = async () => {
 const sendMessage = async () => {
   // Post in json format to your back-end API endpoint to get the response.
   const question = queryInput.value
-  queryInput.value = ''
-  resizeTextarea()
   // Emit ask question and messages.length to the server.
   socket.emit('ask', question, conversationId.value, databaseSelected.value.id)
   messages.value.push({ role: 'user', content: question })
@@ -180,6 +179,12 @@ const stopQuery = async () => {
 const handleEnter = (event) => {
   if (!event.shiftKey) {
     sendMessage()
+  }
+}
+const clearInput = () => {
+  if (!event.shiftKey) {
+    queryInput.value = ''
+    resizeTextarea()
   }
 }
 
