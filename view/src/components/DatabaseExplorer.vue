@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useDatabases } from '../stores/databases'
-import { querySQL, queryText, runQuery } from '../stores/query'
+import { querySQL, runQuery } from '../stores/query'
 
 const { databaseSelected, addDatabaseSchema } = useDatabases()
 
@@ -61,7 +61,6 @@ const onDblClick = (tableInd: number) => {
   console.log(tableSelected)
 
   querySQL.value = `SELECT * FROM "${tableSelected.name}";`
-  queryText.value = `Display ${tableSelected.name}`
   runQuery()
 }
 

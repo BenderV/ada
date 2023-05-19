@@ -4,14 +4,15 @@
       <DatabaseExplorer></DatabaseExplorer>
     </div>
     <div class="col-span-9">
-      <BaseQuery :database="databaseSelected" />
+      <BaseQuery />
       <BaseAlert v-if="queryError">
         <template #title> There is an error in the SQL execution 😔 </template>
         {{ queryError }}
       </BaseAlert>
+      <!--TODO: fix-->
       <BaseBuilder
         v-if="queryResults !== null"
-        :context="queryText"
+        :context="querySQL"
         :data="queryResults"
       ></BaseBuilder>
     </div>
@@ -21,10 +22,7 @@
 <script setup lang="ts">
 import BaseBuilder from '@/components/BaseBuilder.vue'
 import BaseQuery from '@/components/BaseQuery.vue'
-import { queryResults, queryText, queryError } from '../stores/query'
-import { useDatabases } from '../stores/databases'
+import { queryResults, querySQL, queryError } from '../stores/query'
 import BaseAlert from '../components/BaseAlert.vue'
 import DatabaseExplorer from '../components/DatabaseExplorer.vue'
-
-const { databaseSelected } = await useDatabases()
 </script>

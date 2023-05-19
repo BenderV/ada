@@ -7,7 +7,6 @@ import router from '../router'
 const { selectDatabaseById, databaseSelected } = useDatabases()
 
 export const queryId = ref<number | null>(null)
-export const queryText = ref(``)
 export const queryTextTranslation = ref('')
 export const querySQL = ref('')
 export const queryValidated = ref(false)
@@ -15,38 +14,6 @@ export const queryResults = ref(null)
 export const queryCount = ref(null)
 export const queryError = ref(null)
 export const loading = ref(false)
-
-export const translate = async () => {
-  // Clean output
-  queryResults.value = null
-  queryCount.value = null
-  queryError.value = null
-  querySQL.value = ''
-  queryTextTranslation.value = ''
-  queryValidated.value = false
-
-  console.log(databaseSelected.value)
-  loading.value = true
-  await axios
-    .post('/api/query/translate', {
-      query: queryText.value,
-      databaseId: databaseSelected.value.id
-    })
-    .then((response) => {
-      queryId.value = response.data.id
-      router.replace({ name: 'Query', params: { id: queryId.value } })
-      queryTextTranslation.value = sqlPrettier.format(response.data.output)
-      querySQL.value = sqlPrettier.format(response.data.output)
-    })
-    .catch((error) => {
-      queryId.value = error.response.data.id
-      router.replace({ name: 'Query', params: { id: queryId.value } })
-      queryTextTranslation.value = querySQL.value = ''
-    })
-    .finally(() => {
-      loading.value = false
-    })
-}
 
 export const loadQuery = async (id: number) => {
   console.log('id', id)
@@ -56,7 +23,6 @@ export const loadQuery = async (id: number) => {
   const query = response.data
   selectDatabaseById(query.databaseId)
   queryId.value = query.id
-  queryText.value = query.query
   if (query.sql) {
     queryTextTranslation.value = sqlPrettier.format(query.sql)
     querySQL.value = queryTextTranslation.value

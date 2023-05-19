@@ -42,7 +42,6 @@ export default defineComponent({
     })
 
     const defaultVisualisation = computed(() => {
-      console.log('hasTwoKeys', hasTwoKeys)
       if (hasOneValue.value) {
         return 'Value'
       } else if (hasTwoKeys.value) {

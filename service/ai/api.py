@@ -28,43 +28,6 @@ def database_middleware(f):
     return decorated_function
 
 
-@api.route("/query/translate", methods=["POST"])
-@user_middleware
-def translate_query():
-    nl_query = request.json.get("query")
-
-    if not nl_query:
-        return jsonify({"error": "No query provided"}), 400
-
-    prompt = f"Translate the following English query into SQL: {nl_query}"
-
-    response = openai.Completion.create(
-        engine="text-davinci-002",
-        prompt=prompt,
-        max_tokens=100,
-        n=1,
-        stop=None,
-        temperature=0.5,
-    )
-
-    sql_query = response.choices[0].text.strip()
-
-    # Create query
-    query = Query(
-        creatorId=g.user.id,
-        query=nl_query,
-        databaseId=request.json.get("databaseId"),
-        result=response
-        # validatedSQL=
-    )
-    session.add(query)
-    session.commit()
-
-    sql_query = query.result["choices"][0]["text"].strip()
-
-    return jsonify({"id": query.id, "output": sql_query})
-
-
 @api.route("/query/_run", methods=["POST"])
 @user_middleware
 @database_middleware
