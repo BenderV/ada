@@ -14,28 +14,73 @@
       </span>
       <SqlCode v-if="part.type === 'sql'" :code="part.content" :key="`sql-${index}`" />
       <BaseTable v-if="part.type === 'json'" :data="part.content" :key="`json-${index}`" />
+      <BaseBuilder
+        v-if="part.type === 'yml-graph' && sqlResult"
+        :context="part.content"
+        :data="sqlResult"
+      ></BaseBuilder>
     </template>
   </div>
 </template>
 
-<script>
+<script lang="ts">
 import SqlCode from '@/components/SqlCode.vue'
 import BaseTable from '@/components/BaseTable.vue'
+import BaseBuilder from '@/components/BaseBuilder.vue'
+import yaml from 'js-yaml'
+import axios from 'axios'
 
 export default {
   components: {
     SqlCode,
-    BaseTable
+    BaseTable,
+    BaseBuilder
   },
   props: {
     message: {
       type: Object,
       required: true
+    },
+    databaseId: {
+      type: Number,
+      required: true
     }
+  },
+  data() {
+    return {
+      sqlResult: [] as Array<{
+        driverid: number
+        forename: string
+        surname: string
+        dob: string
+        nationality: string
+      }>
+    }
+  },
+  methods: {
+    async executeSql(sql: string) {
+      try {
+        const result = await axios.post('/api/query/_run', {
+          query: sql,
+          databaseId: this.databaseId
+        })
+        console.log(result.data.rows)
+        this.sqlResult = result.data.rows
+      } catch (error) {
+        console.error('Error executing SQL:', error)
+      }
+    }
+  },
+  mounted() {
+    this.parsedText.forEach((part) => {
+      if (part.type === 'yml-graph') {
+        this.executeSql(part.content.sql)
+      }
+    })
   },
   computed: {
     parsedText() {
-      const regex = /```(?:sql|json)\s*([\s\S]*?)\s*```/g
+      const regex = /```((?:sql|json|yml-graph))\s*([\s\S]*?)\s*```/g
       let match
       let lastIndex = 0
       const parts = []
@@ -48,9 +93,24 @@ export default {
           })
         }
 
+        console.log('match', match)
+        let type = match[1]
+        let content
+        if (type === 'json') {
+          content = JSON.parse(match[2].trim())
+        } else if (type === 'sql') {
+          content = match[2].trim()
+        } else if (type === 'yml-graph') {
+          // TODO: verify that this is a valid graph yaml
+          content = yaml.load(match[2].trim())
+          console.log('content', content)
+        } else {
+          throw new Error(`Unknown type ${type}`)
+        }
+
         parts.push({
-          type: match[0].includes('sql') ? 'sql' : 'json',
-          content: match[0].includes('json') ? JSON.parse(match[1].trim()) : match[1].trim()
+          type: type,
+          content: content
         })
 
         lastIndex = match.index + match[0].length

@@ -27,7 +27,7 @@ def parse_chat_template(filename):
         if message[0] == "system" and not instruction:
             instruction = message[1]
         else:
-            examples.append(message[1])
+            examples.append(message)
     return instruction, examples
 
 
@@ -97,9 +97,9 @@ def debug(f):
 @cache_db
 def fetch_openai(messages: list[dict]) -> dict:
     # https://platform.openai.com/docs/models/gpt-4
-    # model = "gpt-4-0314"
+    model = "gpt-4-0314"
     # model = "gpt-4"
-    model = "gpt-4-32k"
+    # model = "gpt-4-32k"
     # model = "gpt-4-32k-0314"
     # model = "gpt-3.5-turbo"
     result = openai.ChatCompletion.create(model=model, messages=messages)
@@ -123,27 +123,42 @@ class ChatGPT:
                 Message(**{"role": "system", "content": self.instruction})
             )
 
-        # Loop, 2 by 2, over the examples
-        for i in range(0, len(self.examples), 2):
+        # Simple loop
+        for example in self.examples:
+            # Herit name from message role
             self.pre_history.append(
                 Message(
                     **{
-                        "role": "user" if i == 0 else "assistant",
-                        "name": "example_user",
-                        "content": self.examples[i],
+                        "role": "system",
+                        "name": "example_" + example[0].strip().lower(),
+                        "content": example[1],
                     }
                 )
             )
-            if i * 2 + 1 < len(self.examples):  # TO change
-                self.pre_history.append(
-                    Message(
-                        **{
-                            "role": "system",
-                            "name": "example_assistant",
-                            "content": self.examples[i + 1],
-                        }
-                    )
-                )
+
+        # Loop, 2 by 2, over the examples
+        # for i in range(0, len(self.examples), 2):
+        #     self.pre_history.append(
+        #         Message(
+        #             **{
+        #                 "role": "user"
+        #                 if i % 2 == 0
+        #                 else "system",  #  == 0 else "assistant",
+        #                 "name": "example_user",
+        #                 "content": self.examples[i],
+        #             }
+        #         )
+        #     )
+        #     if i * 2 + 1 < len(self.examples):  # TO change
+        #         self.pre_history.append(
+        #             Message(
+        #                 **{
+        #                     "role": "system",
+        #                     "name": "example_assistant",
+        #                     "content": self.examples[i + 1],
+        #                 }
+        #             )
+        #         )
 
     @property
     def last_message(self):

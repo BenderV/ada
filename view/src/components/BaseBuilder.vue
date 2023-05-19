@@ -42,6 +42,7 @@ export default defineComponent({
     })
 
     const defaultVisualisation = computed(() => {
+      console.log('hasTwoKeys', hasTwoKeys)
       if (hasOneValue.value) {
         return 'Value'
       } else if (hasTwoKeys.value) {
@@ -58,16 +59,19 @@ export default defineComponent({
       }
     })
 
+    outputType.value = props.context.outputType ?? defaultVisualisation.value
+
     // update defaultVisualisation when props.data changes
     watch(
       () => props.data,
       () => {
-        outputType.value = defaultVisualisation.value
+        console.log('props.context.outputType', props.context.outputType)
+        outputType.value = props.context.outputType ?? defaultVisualisation.value
       }
     )
 
+    // TODO: remove ?
     // outputType.value = defaultVisualisation.value
-
     const updateType = (type) => {
       console.log('updateType', type)
       outputType.value = type
@@ -79,15 +83,22 @@ export default defineComponent({
     const dataTest = computed(() => {
       return {
         chart: {
-          caption: props.context, //Set the chart caption
-          xAxisName: columns.value[0], // Set the x-axis name
-          yAxisName: columns.value[1], // Set the y-axis name
+          caption: props.context.name, //Set the chart caption
+          xAxisName: props.context.xAxisName ?? columns.value[0], // Set the x-axis name
+          yAxisName: props.context.yAxisName ?? columns.value[1], // Set the y-axis name
           // numberSuffix: "K",
           theme: 'fusion'
         },
         // Chart Data - from step 2
         // { id: 2, name: "911" }
         data: props.data?.map((dict) => {
+          if (props.context.xKey && props.context.yKey) {
+            return {
+              label: dict[props.context.xKey],
+              value: dict[props.context.yKey]
+            }
+          }
+
           // If "count" is in the dictionary, use it as the y-axis value.
           // Otherwise, use the value of the first key in the dictionary.
           const keysSet = new Set(Object.keys(dict))
@@ -135,5 +146,3 @@ export default defineComponent({
   }
 })
 </script>
-
-<style></style>

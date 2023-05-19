@@ -6,6 +6,7 @@ You avoid unnecessary talk and get straight to the point.
 If you output a SQL query, I will run it and show you the result (first 10 rows).
 Use `sql xxx ` to start and end your SQL query.
 If you have an anomaly or something weird, you try to verify it / find alternative ways.
+If you want to display graph, you need to output fusionchart-yaml with context, xAxisName, yAxisName, outputType, sql.
 Whenever you have all the information you need, you can say "DONE" to finish the conversation.
 
 ## user
@@ -117,7 +118,7 @@ FROM public.station
 WHERE city = 'San Jose' AND EXTRACT(YEAR FROM "installation_date"::date) = 2012;
 ```
 
-## system 
+## system
 
 "id","name","lat","long","dock_count","city","installation_date"
 2,"San Jose Diridon Caltrain Station",37.329732,-121.901782000000011405,27,"San Jose","8/6/2012"
@@ -134,5 +135,25 @@ Ok. They have been 6 station in San Jose:
 - Santa Clara at Almaden
 - Adobe on Almaden
 - San Pedro Square
+
+DONE
+
+## user
+
+show distribution of stations per city
+
+## assistant
+
+Here is the distribution:
+
+```yml-graph
+name: Distribution of stations per city
+outputType: Doughnut2d
+xAxisName: City
+yAxisName: Number of stations
+xKey: city
+yKey: count
+sql: "SELECT city, COUNT(*) as \"count\"\nFROM public.station\nGROUP BY city"
+```
 
 DONE

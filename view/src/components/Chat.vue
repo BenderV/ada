@@ -22,8 +22,9 @@
           </div>
           <ul class="list-none">
             <li v-for="(message, id) in messages" :key="id">
-              <message-display
+              <MessageDisplay
                 :key="id"
+                :databaseId="databaseSelected.id"
                 :message="message"
                 v-if="message?.display !== false || showHiddenMessages"
               />
@@ -36,6 +37,7 @@
             <!-- Display error message if queryStatus is error -->
             <div v-if="queryStatus === 'error'">
               <p class="text-red-500">{{ errorMessage }}</p>
+              <BaseButton @click="regenerate">Regenerate</BaseButton>
             </div>
             <!-- Display Regenerating button if query is not running and last message is not a query -->
             <div v-else-if="queryStatus == STATUS.TO_STOP && lastMessage?.type !== 'query'">
@@ -148,7 +150,7 @@ const hasHiddenMessages = computed(() => {
 
 const regenerate = async () => {
   // Replace with your dbt API endpoint to regenerate the conversation.
-  console.log('Regenerate')
+  socket.emit('regenerate', null, conversationId.value, databaseSelected.value.id)
 }
 
 const sendMessage = async () => {
@@ -162,10 +164,6 @@ const sendMessage = async () => {
 }
 
 const receiveMessage = async (message) => {
-  // If message has conversation_id, it is a new conversation.
-  if (message.conversation_id) {
-    router.push({ path: `/chat/${message.conversation_id}` })
-  }
   messages.value.push(message)
 }
 
@@ -176,6 +174,13 @@ const stopQuery = async () => {
 const handleEnter = (event) => {
   if (!event.shiftKey) {
     sendMessage()
+  }
+}
+
+const handleConversationChange = (message) => {
+  // If message has conversation_id, it is a new conversation.
+  if (message.conversation_id && message.conversation_id !== conversationId.value) {
+    router.push({ path: `/chat/${message.conversation_id}` })
   }
 }
 
@@ -193,13 +198,16 @@ onMounted(async () => {
     await fetchMessages()
   }
   socket.on('response', (response) => {
+    handleConversationChange(response)
     receiveMessage(response)
   })
 
   socket.on('status', (response) => {
+    handleConversationChange(response)
     updateStatus(response.status, response?.error)
   })
 })
+
 onUnmounted(() => {
   socket.disconnect()
 })

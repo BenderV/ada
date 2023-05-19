@@ -35,17 +35,6 @@ class DatabaseChat:
         )
         self.stop_flags = stop_flags
 
-    def _create_conversation(self, databaseId, name=None):
-        # Create conversation object
-        conversation = Conversation(
-            databaseId=databaseId,
-            ownerId="admin",
-            name=name,
-        )
-        session.add(conversation)
-        session.commit()
-        return conversation
-
     def _record_message(self, content, role="assistant", display=True, done=False):
         message = {
             "conversation_id": self.conversation.id,
@@ -75,12 +64,14 @@ class DatabaseChat:
         chat_gpt = ChatGPT(instruction=instruction, examples=examples)
 
         messages = self.conversation.messages
-        messages[0].content = (
-            "In PostgreSQL database "
-            + self.conversation.database.name
-            + ", "
-            + messages[0].content
-        )
+        if len(messages) == 1:
+            messages[0].content = (
+                # TODO: change this to a more generic message
+                "In PostgreSQL database "
+                + self.conversation.database.name
+                + ", "
+                + messages[0].content
+            )
         chat_gpt.load_history(messages)
         return chat_gpt
 
@@ -146,3 +137,10 @@ class DatabaseChat:
                 )
             message = self._record_message(response, role="system", display=False)
             yield message
+
+    def regenerate_last_message(self):
+        # Delete the last message and reask the question
+        last_message = self.conversation.messages[-1]
+        session.delete(last_message)
+        session.commit()
+        yield from self.ask(last_message.content)

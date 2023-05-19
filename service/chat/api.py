@@ -1,6 +1,6 @@
 from threading import Lock
 
-from back.models import User
+from back.models import Conversation, User
 from back.session import session
 from chat.datachat import DatabaseChat
 from flask import Blueprint
@@ -65,10 +65,44 @@ def emit_status(conversation_id, status, error=None):
     )
 
 
+def _create_conversation(databaseId, name=None):
+    # Create conversation object
+    conversation = Conversation(
+        databaseId=databaseId,
+        ownerId="admin",
+        name=name,
+    )
+    session.add(conversation)
+    session.commit()
+    return conversation
+
+
+def get_or_create_conversation(database_id, conversation_id=None):
+    if conversation_id:
+        return session.query(Conversation).filter_by(id=conversation_id).first()
+    return _create_conversation(databaseId=database_id)
+
+
 def handle_stop_flag(func):
+    """
+    Decorator that handles the stop flag for a conversation.
+    Work like this:
+    - When a 'ask' event is received, we create a stop flag for the conversation
+    - When a 'stop' event is received, we set the stop flag to True
+    - When the query is done, we remove the stop flag
+    """
+
     def wrapper(*args, **kwargs):
         # Extract the conversation_id from the arguments
-        conversation_id = args[2]
+        conversation_id = args[1]
+        database_id = args[2]
+
+        if not conversation_id:
+            conversation = get_or_create_conversation(database_id, conversation_id)
+            conversation_id = conversation.id
+            # Tuple don't support item assignment, so we need to create a new one
+            args = list(args)
+            args[1] = conversation_id  # Replace the conversation_id in the arguments
 
         with stop_flag_lock:
             # Avoid running the same query twice
@@ -105,5 +139,17 @@ def handle_ask(question, conversation_id=None, database_id=None):
     iterator = DatabaseChat(database_id, conversation_id, conversation_stop_flags).ask(
         question
     )
+    for message in iterator:
+        emit("response", message)
+
+
+@socketio.on("regenerate")
+@handle_stop_flag
+def handle_regenerate(_, conversation_id=None, database_id=None):
+    # get conversation_id from the database
+    # conversation = session.query(Conversation).filter_by(id=conversation_id).first()
+    iterator = DatabaseChat(
+        database_id, conversation_id, conversation_stop_flags
+    ).regenerate_last_message()
     for message in iterator:
         emit("response", message)
