@@ -2,6 +2,7 @@ from back.datalake import DatalakeFactory
 from back.models import Conversation, ConversationMessage
 from back.session import session
 from chat.chat import ChatGPT, parse_chat_template
+from chat.lock import StopException
 from chat.sql_utils import extract_sql, run_sql
 
 MAX_DATA_SIZE = 4000  # Maximum size of the data to return
@@ -35,7 +36,19 @@ class DatabaseChat:
         )
         self.stop_flags = stop_flags
 
+    def _create_conversation(self, databaseId, name=None):
+        # Create conversation object
+        conversation = Conversation(
+            databaseId=databaseId,
+            ownerId="admin",
+            name=name,
+        )
+        session.add(conversation)
+        session.commit()
+        return conversation
+
     def _record_message(self, content, role="assistant", display=True, done=False):
+        self.query_stop_flag()
         message = {
             "conversation_id": self.conversation.id,
             "content": content,
@@ -54,9 +67,9 @@ class DatabaseChat:
         session.commit()
         return message
 
-    @property
     def query_stop_flag(self):
-        return self.stop_flags.get(self.conversation.id)
+        if self.stop_flags.get(str(self.conversation.id)):
+            raise StopException("Query stopped by user")
 
     @property
     def chat_gpt(self):
@@ -94,9 +107,9 @@ class DatabaseChat:
             self.conversation.name = question
 
         for attempt in range(CONVERSATION_MAX_ATTEMPT):
+            print(self.stop_flags, self.conversation.id)
             # Check if the user has stopped the query
-            if self.query_stop_flag:
-                return
+            self.query_stop_flag()
 
             response = self.chat_gpt.ask()
 

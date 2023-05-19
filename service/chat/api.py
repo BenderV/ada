@@ -1,8 +1,15 @@
 from threading import Lock
 
-from back.models import Conversation, User
+from back.models import User
 from back.session import session
 from chat.datachat import DatabaseChat
+from chat.lock import (
+    STATUS,
+    conversation_stop_flags,
+    emit_status,
+    handle_stop_flag,
+    stop_flag_lock,
+)
 from flask import Blueprint
 from flask_socketio import emit
 
@@ -10,8 +17,6 @@ api = Blueprint("chat_api", __name__)
 
 from app import socketio
 
-conversation_stop_flags = {}
-stop_flag_lock = Lock()
 MAX_DATA_SIZE = 4000  # Maximum size of the data to return
 CONVERSATION_MAX_ATTEMPT = 10  # Number of attempts to ask the ai before giving up
 
@@ -49,88 +54,6 @@ def handle_stop(conversation_id):
             print(
                 f"No active 'ask' process found for conversation_id {conversation_id}"
             )
-
-
-class STATUS:
-    RUNNING = "running"
-    CLEAR = "clear"
-    TO_STOP = "to_stop"
-    ERROR = "error"
-
-
-def emit_status(conversation_id, status, error=None):
-    emit(
-        "status",
-        {"conversation_id": conversation_id, "status": status, "error": str(error)},
-    )
-
-
-def _create_conversation(databaseId, name=None):
-    # Create conversation object
-    conversation = Conversation(
-        databaseId=databaseId,
-        ownerId="admin",
-        name=name,
-    )
-    session.add(conversation)
-    session.commit()
-    return conversation
-
-
-def get_or_create_conversation(database_id, conversation_id=None):
-    if conversation_id:
-        return session.query(Conversation).filter_by(id=conversation_id).first()
-    return _create_conversation(databaseId=database_id)
-
-
-def handle_stop_flag(func):
-    """
-    Decorator that handles the stop flag for a conversation.
-    Work like this:
-    - When a 'ask' event is received, we create a stop flag for the conversation
-    - When a 'stop' event is received, we set the stop flag to True
-    - When the query is done, we remove the stop flag
-    """
-
-    def wrapper(*args, **kwargs):
-        # Extract the conversation_id from the arguments
-        conversation_id = args[1]
-        database_id = args[2]
-
-        if not conversation_id:
-            conversation = get_or_create_conversation(database_id, conversation_id)
-            conversation_id = conversation.id
-            # Tuple don't support item assignment, so we need to create a new one
-            args = list(args)
-            args[1] = conversation_id  # Replace the conversation_id in the arguments
-
-        with stop_flag_lock:
-            # Avoid running the same query twice
-            if conversation_id in conversation_stop_flags:
-                # We re-emit the running status to the client
-                if conversation_stop_flags[conversation_id]:
-                    emit_status(conversation_id, STATUS.TO_STOP)
-                else:
-                    emit_status(conversation_id, STATUS.RUNNING)
-                return
-
-        conversation_stop_flags[conversation_id] = False
-        emit_status(conversation_id, STATUS.RUNNING)
-        try:
-            res = func(*args, **kwargs)
-        except Exception as e:
-            emit_status(conversation_id, STATUS.ERROR, e)
-            raise e
-        else:
-            emit_status(conversation_id, STATUS.CLEAR)
-        finally:
-            with stop_flag_lock:
-                # Remove the stop flag
-                del conversation_stop_flags[conversation_id]
-
-        return res
-
-    return wrapper
 
 
 @socketio.on("ask")

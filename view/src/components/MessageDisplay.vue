@@ -93,7 +93,6 @@ export default {
           })
         }
 
-        console.log('match', match)
         let type = match[1]
         let content
         if (type === 'json') {

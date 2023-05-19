@@ -88,18 +88,18 @@ import BaseInput from '@/components/BaseInput.vue'
 import BaseSwitch from '@/components/BaseSwitch.vue'
 import BaseSelector from '@/components/BaseSelector.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import axios from 'axios'
 import io from 'socket.io-client'
 import { useDatabases } from '@/stores/databases'
 import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { HiOutlineRefreshIcon } from '@heroicons/vue/24/solid'
-import { nextTick } from 'vue'
 
 const route = useRoute()
 const router = useRouter()
 const socket = io('/')
+const inputTextarea = ref(null)
 
 const { databaseSelected, databases, selectDatabaseById } = useDatabases()
 
@@ -179,7 +179,7 @@ const handleEnter = (event) => {
 
 const handleConversationChange = (message) => {
   // If message has conversation_id, it is a new conversation.
-  if (message.conversation_id && message.conversation_id !== conversationId.value) {
+  if (message.conversation_id !== 'new' && message.conversation_id !== conversationId.value) {
     router.push({ path: `/chat/${message.conversation_id}` })
   }
 }
@@ -194,6 +194,9 @@ const updateStatus = (status, error) => {
 }
 
 onMounted(async () => {
+  inputTextarea.value.focus()
+  inputTextarea.value.select()
+
   if (conversationId.value) {
     await fetchMessages()
   }
@@ -203,7 +206,6 @@ onMounted(async () => {
   })
 
   socket.on('status', (response) => {
-    handleConversationChange(response)
     updateStatus(response.status, response?.error)
   })
 })
@@ -212,7 +214,6 @@ onUnmounted(() => {
   socket.disconnect()
 })
 
-const inputTextarea = ref(null)
 const resizeTextarea = () => {
   // Wait for next tick to get the updated DOM.
   nextTick(() => {

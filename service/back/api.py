@@ -4,6 +4,7 @@ from back.session import session
 from flask import Blueprint, g, jsonify, request
 from middleware import database_middleware, user_middleware
 from sqlalchemy import or_
+from sqlalchemy.exc import SQLAlchemyError
 
 api = Blueprint("back_api", __name__)
 

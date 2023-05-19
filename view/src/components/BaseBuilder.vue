@@ -16,7 +16,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref, watch, compile } from 'vue'
+import { defineComponent, computed, ref, watch } from 'vue'
 import BaseTable from '@/components/BaseTable.vue'
 import BaseTabs from '@/components/BaseTabs.vue'
 
