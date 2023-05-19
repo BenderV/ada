@@ -30,7 +30,7 @@
                 :key="id"
                 :databaseId="databaseSelected.id"
                 :message="message"
-                v-if="message?.display !== false || showHiddenMessages"
+                v-if="message?.display !== false || config.showHiddenMessages"
               />
             </li>
           </ul>
