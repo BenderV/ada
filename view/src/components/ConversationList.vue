@@ -9,6 +9,7 @@
         class="p-4 border-b border-gray-300 cursor-pointer hover:bg-gray-200 flex justify-between items-center"
         v-for="conversation in conversations"
         :key="conversation.id"
+        :class="currentConversation(conversation) ? 'bg-gray-300' : ''"
         @click.stop="selectConversation(conversation)"
       >
         <div @click="selectConversation(conversation)" class="truncate">
@@ -23,12 +24,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
-import { ref } from 'vue'
 import BaseButton from '@/components/BaseButton.vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { TrashIcon } from '@heroicons/vue/24/outline'
+import { useRoute } from 'vue-router'
 
 // Output the conversations types
 type Conversation = {
@@ -37,7 +39,8 @@ type Conversation = {
 }
 
 const router = useRouter()
-
+const route = useRoute()
+const currentPath = computed(() => route.path)
 const conversations: Ref<Conversation[]> = ref([])
 
 const fetchConversations = async () => {
@@ -56,6 +59,10 @@ const selectConversation = (conversation: Conversation) => {
   router.push({ path: `/chat/${conversation.id}` })
 }
 
+const currentConversation = (conversation: Conversation) => {
+  return currentPath.value.endsWith('/' + conversation.id.toString())
+}
+
 // On route change, fetch the conversation data
 router.afterEach(async () => {
   await fetchConversations()
@@ -70,3 +77,8 @@ const deleteConversation = async (id: number) => {
   }
 }
 </script>
+<style>
+.red {
+  background-color: red;
+}
+</style>
