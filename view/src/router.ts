@@ -2,7 +2,7 @@ import { createWebHistory, createRouter } from 'vue-router'
 import { authenticate } from './stores/client'
 import { loadQuery } from './stores/query'
 import { useDatabases } from './stores/databases'
-import Home from './views/Home.vue'
+import Editor from './views/Editor.vue'
 import DatabaseList from './views/DatabaseList.vue'
 import Upload from './views/Upload.vue'
 import Chat from './views/Chat.vue'
@@ -16,11 +16,6 @@ const { fetchDatabases } = useDatabases()
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home
-  },
-  {
-    path: '/chat',
     name: 'Chat',
     component: Chat
   },
@@ -30,6 +25,11 @@ const routes = [
     component: Chat
   },
   {
+    path: '/query',
+    name: 'Editor',
+    component: Editor
+  },
+  {
     path: '/upload',
     name: 'Upload',
     component: Upload
@@ -37,7 +37,7 @@ const routes = [
   {
     path: '/query/:id',
     name: 'Query',
-    component: Home,
+    component: Editor,
     beforeEnter: async (to) => {
       await loadQuery(to.params.id)
       return true

@@ -11,18 +11,18 @@
             </div>
             <div class="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
               <router-link
-                v-for="item in navigation"
-                :key="item.name"
-                :to="item.href"
+                v-for="nav in navigation"
+                :key="nav.name"
+                :to="nav.href"
                 :class="[
-                  isRouteActive(item.href)
+                  isRouteActive(nav.href)
                     ? 'border-indigo-500 text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
                   'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium'
                 ]"
-                :aria-current="isRouteActive(item.href) ? 'page' : undefined"
+                :aria-current="isRouteActive(nav.href) ? 'page' : undefined"
               >
-                {{ item.name }}
+                {{ nav.name }}
               </router-link>
             </div>
           </div>
@@ -152,14 +152,17 @@ import { client, user, logout } from '../stores/client'
 const route = useRoute()
 const currentPath = computed(() => route.path)
 
-const isRouteActive = (path: string) => {
-  return path === currentPath.value || (path === '/chat' && currentPath.value.startsWith('/chat'))
+const isRouteActive = (navPath: string) => {
+  return (
+    navPath === currentPath.value ||
+    (navPath === '/' && currentPath.value.startsWith('/chat')) ||
+    (navPath === '/query' && currentPath.value.startsWith('/query'))
+  )
 }
 
 const navigation = [
-  { name: 'Query', href: '/' },
-  // { name: "Upload", href: "/upload" },
-  { name: 'Chat', href: '/chat' },
+  { name: 'Chat', href: '/' },
+  { name: 'Query', href: '/query' },
   { name: 'Databases', href: '/databases' }
 ]
 const userNavigation = [
