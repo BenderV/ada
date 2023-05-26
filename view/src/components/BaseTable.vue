@@ -6,7 +6,6 @@
 import { ref, reactive, onMounted, defineProps, watch } from 'vue'
 import { TabulatorFull as Tabulator } from 'tabulator-tables' //import Tabulator library
 import 'tabulator-tables/dist/css/tabulator_semanticui.min.css'
-import { queryCount } from '../stores/query'
 
 const table = ref(null) // reference to your table element
 const tabulator = ref(null) // variable to hold your table
@@ -14,7 +13,12 @@ const tabulator = ref(null) // variable to hold your table
 const props = defineProps({
   data: {
     type: Array,
-    default: []
+    default: [],
+    required: true
+  },
+  count: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -38,7 +42,7 @@ onMounted(() => {
     pagination: true,
     paginationSize: 10,
     paginationCounter: (pageSize, currentRow, currentPage, totalRows, totalPages) => {
-      return `Showing ${currentRow}-${currentRow + pageSize} of ${queryCount.value} rows`
+      return `Showing ${currentRow}-${currentRow + pageSize} of ${props.count} rows`
     }
   })
 })

@@ -3,7 +3,7 @@
   <div v-if="outputType == 'Value'" class="text-center text-4xl py-16">
     {{ getUniqueValueOfTable }}
   </div>
-  <BaseTable v-if="outputType == 'Table'" :data="data2"></BaseTable>
+  <BaseTable v-if="outputType == 'Table'" :data="data2" :count="count"></BaseTable>
 
   <fusioncharts
     v-if="outputType != 'Table' && outputType != 'Value'"
@@ -22,7 +22,7 @@ import BaseTabs from '@/components/BaseTabs.vue'
 
 export default defineComponent({
   name: 'BaseBuilder',
-  props: ['data', 'context'],
+  props: ['data', 'context', 'count'],
   components: {
     BaseTable,
     BaseTabs
@@ -78,6 +78,7 @@ export default defineComponent({
 
     const columns = computed(() => (props.data.length ? Object.keys(props.data[0]) : ['a', 'b']))
     const data2 = computed(() => props.data)
+    const count = computed(() => props.count)
 
     const dataTest = computed(() => {
       return {
@@ -140,7 +141,8 @@ export default defineComponent({
       hasOneValue,
       getUniqueValueOfTable,
       datasource: dataTest,
-      type: visType // "doughnut2d", // "line", // "column2d",
+      type: visType, // "doughnut2d", // "line", // "column2d",
+      count
     }
   }
 })

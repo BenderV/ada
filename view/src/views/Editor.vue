@@ -13,6 +13,7 @@
       <BaseBuilder
         v-if="queryResults !== null"
         :context="querySQL"
+        :count="queryCount"
         :data="queryResults"
       ></BaseBuilder>
     </div>
@@ -22,7 +23,7 @@
 <script setup lang="ts">
 import BaseBuilder from '@/components/BaseBuilder.vue'
 import BaseQuery from '@/components/BaseQuery.vue'
-import { queryResults, querySQL, queryError } from '../stores/query'
+import { queryResults, querySQL, queryError, queryCount } from '../stores/query'
 import BaseAlert from '../components/BaseAlert.vue'
 import DatabaseExplorer from '../components/DatabaseExplorer.vue'
 </script>

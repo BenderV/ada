@@ -101,7 +101,7 @@ def fetch_openai(messages: list[dict]) -> dict:
     # model = "gpt-4"
     # model = "gpt-4-32k"
     # model = "gpt-4-32k-0314"
-    model = "gpt-3.5-turbo"
+    # model = "gpt-3.5-turbo"
     result = openai.ChatCompletion.create(model=model, messages=messages)
     # result = requests.post(
     #     "https://api.openai.com/v1/chat/completions",

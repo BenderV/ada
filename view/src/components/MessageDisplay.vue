@@ -17,6 +17,7 @@
       <BaseBuilder
         v-if="part.type === 'yml-graph' && sqlResult"
         :context="part.content"
+        :count="sqlCount"
         :data="sqlResult"
       ></BaseBuilder>
     </template>
@@ -49,12 +50,9 @@ export default {
   data() {
     return {
       sqlResult: [] as Array<{
-        driverid: number
-        forename: string
-        surname: string
-        dob: string
-        nationality: string
-      }>
+        [key: string]: string | number | boolean | null
+      }>,
+      sqlCount: 0
     }
   },
   methods: {
@@ -66,6 +64,7 @@ export default {
         })
         console.log(result.data.rows)
         this.sqlResult = result.data.rows
+        this.sqlCount = result.data.count
       } catch (error) {
         console.error('Error executing SQL:', error)
       }
