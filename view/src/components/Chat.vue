@@ -48,14 +48,14 @@
               <BaseButton @click="regenerate">Regenerate</BaseButton>
             </div>
 
-            <div v-if="queryStatus === 'running'">
+            <div v-if="queryStatus === STATUS.RUNNING">
               <!-- Add loading icon, centered, displayed only if a query is running -->
               <LoaderIcon /><br />
               <!-- Add stop button, centered, displayed only if a query is running -->
               <button
                 @click="stopQuery"
                 :disabled="queryStatus === 'to_stop'"
-                class="w-full bg-gray-500 text-white py-2 px-4 rounded ml-2"
+                class="w-full bg-gray-500 text-white py-2 px-4 rounded"
                 type="submit"
               >
                 Stop
@@ -70,7 +70,6 @@
           <textarea
             @input="resizeTextarea"
             @keydown.enter="handleEnter"
-            @keyup.enter="clearInput"
             ref="inputTextarea"
             class="flex-grow py-2 px-3 rounded border border-gray-300"
             rows="1"
@@ -144,11 +143,6 @@ watch(
   }
 )
 
-const isQueryRunning = computed(() => {
-  // Last message is a query.
-  return messages.value[messages.value.length - 1]?.role === 'user'
-})
-
 const hasHiddenMessages = computed(() => {
   return messages.value.some((message) => message.display === false)
 })
@@ -159,12 +153,19 @@ const regenerate = async () => {
 }
 
 const sendMessage = async () => {
+  // If query is already running, do nothing.
+  if (queryStatus.value === STATUS.RUNNING) {
+    return
+  }
   // Post in json format to your back-end API endpoint to get the response.
   const question = queryInput.value
   // Emit ask question and messages.length to the server.
   socket.emit('ask', question, conversationId.value, databaseSelected.value.id)
   messages.value.push({ role: 'user', content: question })
-  clearInput()
+  // After 100ms, clear the input.
+  setTimeout(() => {
+    clearInput()
+  }, 100)
 }
 
 const receiveMessage = async (message) => {
@@ -181,10 +182,8 @@ const handleEnter = (event) => {
   }
 }
 const clearInput = () => {
-  if (!event.shiftKey) {
-    queryInput.value = ''
-    resizeTextarea()
-  }
+  queryInput.value = ''
+  resizeTextarea()
 }
 
 const handleConversationChange = (message) => {
