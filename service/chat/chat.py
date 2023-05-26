@@ -1,9 +1,14 @@
 import json
+import os
 import typing
 
 import openai
 from back.models import ConversationMessage as Message
 from back.session import session
+
+# https://platform.openai.com/docs/models/gpt-4
+DEFAULT_MODEL = "gpt-4-0314"
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", DEFAULT_MODEL)
 
 
 def parse_chat_template(filename):
@@ -96,19 +101,7 @@ def debug(f):
 # @debug
 @cache_db
 def fetch_openai(messages: list[dict]) -> dict:
-    # https://platform.openai.com/docs/models/gpt-4
-    model = "gpt-4-0314"
-    # model = "gpt-4"
-    # model = "gpt-4-32k"
-    # model = "gpt-4-32k-0314"
-    # model = "gpt-3.5-turbo"
-    result = openai.ChatCompletion.create(model=model, messages=messages)
-    # result = requests.post(
-    #     "https://api.openai.com/v1/chat/completions",
-    #     headers={"Authorization": "Bearer " + openai.api_key},
-    #     json={"model": "gpt-4", "messages": messages},
-    # ).json()
-    return result
+    return openai.ChatCompletion.create(model=OPENAI_MODEL, messages=messages)
 
 
 class ChatGPT:

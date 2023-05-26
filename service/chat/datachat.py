@@ -1,3 +1,5 @@
+import copy
+
 from back.datalake import DatalakeFactory
 from back.models import Conversation, ConversationMessage
 from back.session import session
@@ -77,14 +79,14 @@ class DatabaseChat:
         chat_gpt = ChatGPT(instruction=instruction, examples=examples)
 
         messages = self.conversation.messages
-        if len(messages) == 1:
-            messages[0].content = (
-                # TODO: change this to a more generic message
-                "In PostgreSQL database "
-                + self.conversation.database.name
-                + ", "
-                + messages[0].content
-            )
+        # deep copy the messages (to avoid modifying the database object)
+        # why it is this: 'message' object has no attribute 'copy'
+        messages = [copy.deepcopy(message) for message in messages]
+        messages[
+            0
+        ].content = (
+            f"In {self.conversation.database.engine} database, {messages[0].content}"
+        )
         chat_gpt.load_history(messages)
         return chat_gpt
 

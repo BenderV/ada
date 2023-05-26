@@ -11,7 +11,7 @@ Whenever you have all the information you need, you can say "DONE" to finish the
 
 ## user
 
-In PostgreSQL database "bike_1" 
+In postgres database
 Show stations in san jose installed in 2012
 
 ## assistant

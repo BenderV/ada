@@ -48,16 +48,19 @@
               <BaseButton @click="regenerate">Regenerate</BaseButton>
             </div>
 
-            <!-- Add stop button, centered, displayed only if a query is running -->
-            <button
-              @click="stopQuery"
-              v-if="queryStatus === 'running'"
-              :disabled="queryStatus === 'to_stop'"
-              class="w-24 bg-gray-500 text-white py-2 px-4 rounded ml-2"
-              type="submit"
-            >
-              Stop
-            </button>
+            <div v-if="queryStatus === 'running'">
+              <!-- Add loading icon, centered, displayed only if a query is running -->
+              <LoaderIcon /><br />
+              <!-- Add stop button, centered, displayed only if a query is running -->
+              <button
+                @click="stopQuery"
+                :disabled="queryStatus === 'to_stop'"
+                class="w-full bg-gray-500 text-white py-2 px-4 rounded ml-2"
+                type="submit"
+              >
+                Stop
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -95,6 +98,7 @@ import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { HiOutlineRefreshIcon } from '@heroicons/vue/24/solid'
 import { useConfigStore } from '@/stores/config'
+import LoaderIcon from '@/components/icons/LoaderIcon.vue'
 
 const config = useConfigStore()
 
