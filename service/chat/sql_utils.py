@@ -37,10 +37,7 @@ def run_sql(connection, sql):
                 break
 
         # Display in JSON
-        # TODO: switch to CSV (more economical)
         results_dumps = json.dumps(results_limited, default=str)
-        # if total_size > MAX_DATA_SIZE:
-        #    results_dumps += "\n..."
 
         # Send the result back to chat_gpt as the new question
         execution_response = RESULT_TEMPLATE.format(
