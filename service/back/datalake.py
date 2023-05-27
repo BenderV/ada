@@ -80,9 +80,9 @@ class SQLDatabase:
         TODO: Query and fetch only the first 1000 rows, but return the total count
         """
         with self.engine.connect() as connection:
-            return [
-                dict(r._mapping) for r in connection.execute(text(query)).fetchall()
-            ]
+            # fetch max 1000 rows
+            rows = connection.execute(text(query)).fetchmany(1000)
+            return [dict(r._mapping) for r in rows]
 
     def create_transformation(self, name, query, materialized="table", schema="public"):
         if materialized == "table":
@@ -179,7 +179,8 @@ class SnowflakeDatabase(AbstractDatabase):
 
         with self.connection.cursor() as cursor:
             cursor.execute(query)
-            results = cursor.fetchall()
+            # On fetch maximum 1000 rows
+            results = cursor.fetchmany(1000)
             column_names = [column[0] for column in cursor.description]
 
             return [dict(zip(column_names, row)) for row in results]
