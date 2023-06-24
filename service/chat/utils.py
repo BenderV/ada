@@ -2,6 +2,17 @@ import csv
 import json
 import re
 from io import StringIO
+from turtle import distance
+
+import numpy as np
+import openai
+from back.models import Query
+from back.session import session
+from sqlalchemy import and_
+
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 
 def csv_dumps(data):
@@ -34,3 +45,41 @@ def message_replace_json_block_to_csv(content):
             f"```json\n{match}\n```", f"```csv\n{csv_data_str}\n```"
         )
     return content
+
+
+def generate_embedding(string):
+    response = openai.Embedding.create(input=string, model="text-embedding-ada-002")
+    # len => 1536
+    embedding = response["data"][0]["embedding"]
+    return embedding
+
+
+def find_closest_embeddings(query, top_n=5):
+    query_embedding = generate_embedding(query)
+
+    queries = session.query(Query).filter(
+        and_(
+            Query.databaseId == 131,
+            Query.query != "???",
+            Query.embedding != None,  # Add this condition
+            Query.validatedSQL != None,  # Add this condition
+        )
+    )
+
+    print("Total queries: ", queries.count())
+
+    # Fetch the top_n closest values to the query embedding
+    # Should be at least 80% similar
+    closest_queries = []
+    for q in queries:
+        distance = cosine_similarity(query_embedding, q.embedding)
+        if distance > 0.8:
+            closest_queries.append((q, distance))
+
+    # Sort by distance
+    closest_queries.sort(key=lambda x: x[1], reverse=True)
+
+    # Return the top_n matches
+    closest_queries = closest_queries[:top_n]
+
+    return [q[0] for q in closest_queries]

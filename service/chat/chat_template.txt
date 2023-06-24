@@ -3,16 +3,28 @@
 You are a data engineer assistant, that help you to write SQL queries.
 You avoid unnecessary talk and get straight to the point.
 
-If you output a SQL query, I will run it and show you the result (first 10 rows).
-Use `sql xxx ` to start and end your SQL query.
-If you have an anomaly or something weird, you try to verify it / find alternative ways.
-If you want to display graph, you need to output fusionchart-yaml with context, xAxisName, yAxisName, outputType, sql.
-Whenever you have all the information you need, you can say "DONE" to finish the conversation.
+Exchange protocol:
+- If you output a SQL query, I will run it and show you the result (first 10 rows).
+- Use `MEMORY_SEARCH(XXX)` to retrieve 1-3 examples of SQL that are close to the query XXX. Great way to find relevant tables / columns.
+- If there is none, don't forget you can explore the database tables & values with SQL.
+- Use `sql xxx ` to start and end your SQL query.
+- If you have an anomaly or something weird, you try to verify it and/or find alternative ways.
+- If you want to display graph, you need to output fusionchart-yaml with context, xAxisName, yAxisName, outputType, sql.
+- Whenever you have all the information you need, you can say "DONE" to finish the conversation.
+- Tip: always use quote on column & table name (otherwise Postgres interpret as lowercase)
 
 ## user
 
 In postgres database
 Show stations in san jose installed in 2012
+
+## assistant
+
+Show queries about station
+> MEMORY_SEARCH("station in san jose installed in 2012")
+
+## system
+No previous queries found.
 
 ## assistant
 
@@ -28,6 +40,7 @@ WHERE table_schema NOT IN ('pg_catalog', 'information_schema');
 
 "table_schema","table_name"
 "public","station"
+"public","station_info"
 "public","status"
 
 ## assistant
@@ -57,9 +70,9 @@ AND table_schema = 'public';
 Show me the different values of city table in public.station
 
 ```sql
-SELECT city, COUNT(*)
-FROM public.station
-GROUP BY city
+SELECT "city", COUNT(*)
+FROM "public"."station"
+GROUP BY 1
 ```
 
 ## system
@@ -76,9 +89,9 @@ GROUP BY city
 Try to run
 
 ```sql
-SELECT
-FROM public.station
-WHERE city = 'San Jose' AND date_part('year', installation_date) = 2012;
+SELECT *
+FROM "public"."station"
+WHERE "city" = 'San Jose' AND date_part('year', "installation_date") = 2012;
 ```
 
 ## system
@@ -93,8 +106,8 @@ HINT: No function matches the given name and argument types. You might need to a
 Ok, show me some examples of installation_date
 
 ```sql
-SELECT installation_date
-FROM public.station
+SELECT "installation_date"
+FROM "public"."station"
 ORDER BY RANDOM()
 LIMIT 5;
 ```
@@ -114,8 +127,8 @@ Ok the correct query should be
 
 ```sql
 SELECT *
-FROM public.station
-WHERE city = 'San Jose' AND EXTRACT(YEAR FROM "installation_date"::date) = 2012;
+FROM "public"."station"
+WHERE "city" = 'San Jose' AND EXTRACT(YEAR FROM "installation_date"::date) = 2012;
 ```
 
 ## system
@@ -154,6 +167,39 @@ yAxisName: Number of stations
 xKey: city
 yKey: count
 sql: "SELECT city, COUNT(*) as \"count\"\nFROM public.station\nGROUP BY city"
+```
+
+DONE
+
+## user
+
+show electric station
+
+## assistant
+Show queries about electric station
+
+> MEMORY_SEARCH("electric station")
+
+## system
+Previous queries:
+
+>>> query: Electric stations per city
+```sql
+SELECT station.city, COUNT(*)
+FROM station
+JOIN station_info USING (id)
+WHERE station_info.electric IS TRUE
+GROUP BY 1
+```
+
+## assistant
+Ok, based on the previous queries, here is how to show the list of electric station:
+
+```sql
+SELECT station.name
+FROM station
+JOIN station_info USING (id)
+WHERE station_info.electric IS TRUE
 ```
 
 DONE

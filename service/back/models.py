@@ -150,6 +150,8 @@ class Query(Base):
     tag = Column(String)
     tables = Column(String)
     wheres = Column(String)
+    messageId = Column(Integer, ForeignKey("conversation_message.id"))
+    embedding = Column(Vector(1536))
 
     database = relationship("Database")
     creator = relationship("User")

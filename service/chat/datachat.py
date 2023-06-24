@@ -1,9 +1,10 @@
 import copy
+import re
 
 from back.datalake import DatalakeFactory
-from back.models import Conversation, ConversationMessage
+from back.models import Conversation, ConversationMessage, Query
 from back.session import session
-from chat.chat import ChatGPT, parse_chat_template
+from chat.chatgpt import ChatGPT, parse_chat_template
 from chat.lock import StopException
 from chat.sql_utils import extract_sql, run_sql
 from chat.utils import message_replace_json_block_to_csv
@@ -22,9 +23,53 @@ def format_message(**kwargs):
     return kwargs
 
 
+def extract_memory_query(content):
+    """
+    >>> extract_memory_query("MEMORY_SEARCH(station)")
+    'station'
+
+    >>> extract_memory_query("blabla bla")
+    """
+    search = re.search(r'MEMORY_SEARCH\("?(.*)"?\)', content)
+    if search:
+        memory = search.group(1)
+        return memory
+
+
+def save_query(sql_query, message):
+    return
+    query = Query(
+        query="???",
+        # databaseId=message.databaseId,
+        validatedSQL=sql_query,
+        # messageId=message.id,
+    )
+    session.add(query)
+    session.commit()
+
+
+response = """
+Previous queries:
+
+{% for query in queries %}
+>>> Query: Show pits stop duration distribution for year 2020
+```sql
+{{SQL}}
+```
+{% endfor %}
+"""
+
+
 class DatabaseChat:
+    """
+    ChatGPT with a database
+    Intercept the exchange so if there is SQL in the conversion, it's executed,
+    and the result is sent back to the AI. (unless there is "DONE" in the response)
+    If there is a MEMORY_SEARCH() query, we intercept end send back proximate queries
+    """
+
     def __init__(self, database_id, conversation_id=None, stop_flags=None):
-        if not conversation_id:
+        if conversation_id is None:
             # Create conversation object
             self.conversation = self._create_conversation(databaseId=database_id)
         else:
@@ -94,18 +139,8 @@ class DatabaseChat:
         chat_gpt.load_history(messages)
         return chat_gpt
 
-    # def save_and_emit_message(
-    #     self, content, role="assistant", display=True, done=False
-    # ):
-    #     # TODO
-    #     message = {
-    #         "content": content,
-    #         "role": role,
-    #         "display": display,
-    #         "done": done,
-    #     }
-    #     self._record_message(**message)
-    #     yield message
+    # def ask_chat_gpt(self):
+    #     return self.chat_gpt.ask()
 
     def ask(self, question):
         self._record_message(question, role="user")
@@ -127,10 +162,14 @@ class DatabaseChat:
                 return message
 
             sql_queries = extract_sql(response)
+            memory_query = extract_memory_query(response)
+            has_query = bool(sql_queries or memory_query)
 
-            if not sql_queries:
+            print(response, "memory_query", memory_query)
+
+            if not has_query:
                 """
-                If the answer does not contain an SQL query, we assume it's either:
+                If the answer does not contain an query (SQL, Memory), we assume it's either:
                 - The final answer
                 - A question to the user
                 """
@@ -138,24 +177,60 @@ class DatabaseChat:
                 yield message
                 return message
             else:
-                # If the answer contains an SQL query, try to execute it
+                # If the answer contains a query, try to execute it
                 message = self._record_message(response, display=False)
                 yield message
 
-            results = [run_sql(self.datalake, sql) for sql in sql_queries]
+            if memory_query:
+                # response = self.conversation.memory[memory]
+                # Mock the response
+                response = """
+Previous queries:
+    
+>>> Query: Show pits stop duration distribution for year 2020
+```sql
+SELECT   round(pit_stops.milliseconds / 1000 ,2)
+        ,COUNT(*) AS freq
+FROM    pit_stops
+JOIN    races
+ON      races.raceid = pit_stops.raceid
+WHERE  races.year = '2020'
+GROUP BY  1
+ORDER BY  1
+```
 
-            if len(results) == 1:
-                response, _ = results[0]
-            else:
-                # Join the results in a single string
-                response = "".join(
-                    [
-                        f"For the query number {i}:\n{message}"
-                        for i, (message, _) in enumerate(results, start=1)
-                    ]
-                )
-            message = self._record_message(response, role="system", display=False)
-            yield message
+
+>>> Query: Show number of races per country
+```sql
+SELECT circuits.country, COUNT(*)
+FROM races
+JOIN circuits ON (circuits.circuitid = races.circuitid)
+GROUP BY 1
+ORDER BY 2 DESC
+```
+"""
+                print("memory_query", response)
+                message = self._record_message(response, role="system", display=False)
+                yield message
+
+            if sql_queries:
+                for sql_query in sql_queries:
+                    save_query(sql_query, message)
+
+                results = [run_sql(self.datalake, sql) for sql in sql_queries]
+
+                if len(results) == 1:
+                    response, _ = results[0]
+                else:
+                    # Join the results in a single string
+                    response = "".join(
+                        [
+                            f"For the query number {i}:\n{message}"
+                            for i, (message, _) in enumerate(results, start=1)
+                        ]
+                    )
+                message = self._record_message(response, role="system", display=False)
+                yield message
 
     def regenerate_last_message(self):
         # Delete the last message and reask the question
