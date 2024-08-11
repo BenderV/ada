@@ -171,6 +171,7 @@ class Conversation(DefaultBase, Base):
     name: str
     ownerId: str
     databaseId: int
+    projectId: int
     createdAt: str
     updatedAt: str
     # messages: List[ConversationMessage] = field(default_factory=list)
@@ -178,6 +179,7 @@ class Conversation(DefaultBase, Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     ownerId = Column(String, ForeignKey("user.id"))
+    projectId = Column(Integer, ForeignKey("project.id"))
     databaseId = Column(Integer, ForeignKey("database.id"), nullable=False)
     createdAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
     updatedAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
@@ -232,6 +234,54 @@ class UserOrganisation(DefaultBase, Base):
 
     organisation = relationship("Organisation")
     user = relationship("User")
+
+
+@dataclass
+class ProjectTables(Base):
+    __tablename__ = "project_tables"
+
+    databaseName: str
+    schemaName: str
+    tableName: str
+
+    id = Column(Integer, primary_key=True)
+    projectId = Column(Integer, ForeignKey("project.id"), nullable=False)
+    databaseName = Column(String)
+    schemaName = Column(String)
+    tableName = Column(String)
+
+    project = relationship("Project", back_populates="tables")
+
+
+@dataclass
+class Project(Base):
+    __tablename__ = "project"
+
+    id: int
+    name: str
+    description: str
+    creatorId: str  # warning, it's a string
+    organisationId: int
+    # TODO: change
+    # tables: [ProjectTables]
+    # tables: List[ConversationMessage] = field(default_factory=list)
+
+    id = Column(Integer, primary_key=True)  # TODO: transform to uuid
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    creatorId = Column(String, ForeignKey("user.id"), nullable=False)
+    organisationId = Column(Integer, ForeignKey("organisation.id"))
+
+    creator = relationship("User")
+    organisation = relationship("Organisation")
+    tables = relationship(
+        "ProjectTables",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        lazy="joined",
+        # Order by id
+        # order_by="ProjectTable.id",
+    )
 
 
 if __name__ == "__main__":

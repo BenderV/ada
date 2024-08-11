@@ -4,11 +4,10 @@
       <div class="flex flex-col flex-grow h-full overflow-y-auto">
         <div class="w-full lg:pt-4">
           <!-- Dropdown to select the dabase to query -->
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="database">
-            Database
-          </label>
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="database"> Context </label>
+          <!-- TODO: have name like 'Everest > Packages' ?? -->
           <BaseSelector
-            :options="databases"
+            :options="projectsAndDatabases"
             v-model="databaseSelected"
             class="w-full"
             placeholder="Select a database"
@@ -144,6 +143,8 @@ import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import axios from 'axios'
 import io from 'socket.io-client'
 import { useDatabases } from '@/stores/databases'
+import { useProjects } from '@/stores/projects'
+
 import { useRoute } from 'vue-router'
 import { useRouter } from 'vue-router'
 import { useConfigStore } from '@/stores/config'
@@ -161,6 +162,8 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
 const socket = io(SOCKET_URL)
 const inputTextarea = ref(null)
 
+const { projectsAndDatabases, fetchProjects } = useProjects()
+fetchProjects({ refresh: true })
 const { databaseSelected, databases, selectDatabaseById } = useDatabases()
 
 const STATUS = {
