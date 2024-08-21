@@ -4,7 +4,17 @@ from dataclasses import dataclass
 from autochat import Message
 from autochat.chatgpt import Message as AutoChatMessage
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import TIMESTAMP, Boolean, Column, ForeignKey, Integer, String, text
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -34,8 +44,15 @@ def format_to_snake_case(**kwargs):
     return kwargs
 
 
+class DefaultBase:
+    createdAt = Column(DateTime, nullable=False, server_default=func.now())
+    updatedAt = Column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
 @dataclass
-class Database(Base):
+class Database(DefaultBase, Base):
     id: int
     name: str
     description: str
@@ -77,7 +94,7 @@ class Database(Base):
         return self._engine  # .replace("postgres", "postgresql")
 
 
-class Organisation(Base):
+class Organisation(DefaultBase, Base):
     __tablename__ = "organisation"
 
     id = Column(String, primary_key=True)
@@ -85,7 +102,7 @@ class Organisation(Base):
 
 
 @dataclass
-class ConversationMessage(Base):
+class ConversationMessage(DefaultBase, Base):
     __tablename__ = "conversation_message"
 
     id: int
@@ -103,8 +120,6 @@ class ConversationMessage(Base):
     content = Column(String, nullable=True)
     functionCall = Column(JSONB)
     data = Column(JSONB)
-    createdAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
-    updatedAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
     queryId = Column(Integer, ForeignKey("query.id"), nullable=True)
     reqId = Column(String, nullable=True)
 
@@ -149,7 +164,7 @@ class ConversationMessage(Base):
 
 
 @dataclass
-class Conversation(Base):
+class Conversation(DefaultBase, Base):
     __tablename__ = "conversation"
 
     id: int
@@ -178,7 +193,7 @@ class Conversation(Base):
     )
 
 
-class Query(Base):
+class Query(DefaultBase, Base):
     __tablename__ = "query"
 
     id = Column(Integer, primary_key=True)
@@ -188,8 +203,6 @@ class Query(Base):
     result = Column(JSONB)
     comment = Column(String)
     creatorId = Column(String, ForeignKey("user.id"))
-    createdAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
-    updatedAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
     tag = Column(String)
     tables = Column(String)
     wheres = Column(String)
@@ -201,7 +214,7 @@ class Query(Base):
     visualisationParams = Column(JSONB)
 
 
-class User(Base):
+class User(DefaultBase, Base):
     __tablename__ = "user"
 
     email = Column(String, nullable=False, unique=True)
@@ -211,7 +224,7 @@ class User(Base):
     # organisation = relationship("Organisation")
 
 
-class UserOrganisation(Base):
+class UserOrganisation(DefaultBase, Base):
     __tablename__ = "user_organisation"
 
     userId = Column(String, ForeignKey("user.id"), primary_key=True)
