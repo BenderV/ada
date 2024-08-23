@@ -61,13 +61,6 @@ const fetchProjectById = (projectId: number) => {
   return axios.get(`/api/projects/${projectId}`).then((res) => res.data)
 }
 
-const { databases, fetchDatabases } = useDatabases()
-await fetchDatabases({ refresh: true })
-const projectsAndDatabases = computed(() => {
-  // TODO: change name to context ?
-  return projects.value.concat(databases.value) // @ts-ignore
-})
-
 export const useProjects = () => {
   return {
     fetchProjects,
@@ -80,7 +73,6 @@ export const useProjects = () => {
     createProject,
     deleteProject,
     getProjectById,
-    fetchProjectById,
-    projectsAndDatabases
+    fetchProjectById
   }
 }

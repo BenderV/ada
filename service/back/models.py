@@ -181,8 +181,6 @@ class Conversation(DefaultBase, Base):
     ownerId = Column(String, ForeignKey("user.id"))
     projectId = Column(Integer, ForeignKey("project.id"))
     databaseId = Column(Integer, ForeignKey("database.id"), nullable=False)
-    createdAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
-    updatedAt = Column(TIMESTAMP, nullable=False, default=text("now()"))
 
     owner = relationship("User")
     database = relationship("Database")
@@ -193,6 +191,7 @@ class Conversation(DefaultBase, Base):
         # Order by id
         order_by="ConversationMessage.id",
     )
+    project = relationship("Project")
 
 
 class Query(DefaultBase, Base):
@@ -237,7 +236,7 @@ class UserOrganisation(DefaultBase, Base):
 
 
 @dataclass
-class ProjectTables(Base):
+class ProjectTables(DefaultBase, Base):
     __tablename__ = "project_tables"
 
     databaseName: str
@@ -254,14 +253,15 @@ class ProjectTables(Base):
 
 
 @dataclass
-class Project(Base):
+class Project(DefaultBase, Base):
     __tablename__ = "project"
 
     id: int
     name: str
     description: str
     creatorId: str  # warning, it's a string
-    organisationId: int
+    organisationId: str
+    databaseId: int  # temporary
     # TODO: change
     # tables: [ProjectTables]
     # tables: List[ConversationMessage] = field(default_factory=list)
@@ -270,7 +270,8 @@ class Project(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=False)
     creatorId = Column(String, ForeignKey("user.id"), nullable=False)
-    organisationId = Column(Integer, ForeignKey("organisation.id"))
+    organisationId = Column(String, ForeignKey("organisation.id"))
+    databaseId = Column(Integer, ForeignKey("database.id"), nullable=False)
 
     creator = relationship("User")
     organisation = relationship("Organisation")
@@ -282,6 +283,7 @@ class Project(Base):
         # Order by id
         # order_by="ProjectTable.id",
     )
+    conversations = relationship("Conversation", back_populates="project")
 
 
 if __name__ == "__main__":
