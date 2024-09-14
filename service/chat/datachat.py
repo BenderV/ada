@@ -8,9 +8,11 @@ from back.models import Conversation, ConversationMessage, Query
 from chat.dbt_utils import DBT
 from chat.lock import StopException
 from chat.memory_utils import find_closest_embeddings
+from chat.render import render_chart
 from chat.sql_utils import run_sql
 
 # Load functions from a predefined path, independent of the current working directory
+
 FUNCTIONS = {}
 functions_path = os.path.join(os.path.dirname(__file__), "functions")
 for filename in os.listdir(functions_path):
@@ -18,6 +20,20 @@ for filename in os.listdir(functions_path):
         FUNCTIONS[filename[:-5]] = json.load(f)
 
 AUTOCHAT_PROVIDER = os.getenv("AUTOCHAT_PROVIDER", "openai")
+
+
+def python_transform(code, result):
+    # Create a local namespace for execution
+    local_namespace = {"result": result}
+
+    # Compile the code object once for better performance
+    code_obj = compile(code, "<string>", "exec")
+
+    # Execute the data_preprocessing code
+    exec(code_obj, {}, local_namespace)
+
+    # Retrieve the processed result
+    return local_namespace.get("processed_result")
 
 
 class DatabaseChat:
@@ -165,10 +181,44 @@ class DatabaseChat:
         raise StopLoopException("We want to stop after submitting")
         return
 
-    def plot_widget(self, caption: str, outputType: str, sql: str, params: dict = None):
+    def plot_widget(
+        self,
+        caption: str,
+        outputType: str,
+        sql: str,
+        params: dict = None,
+        data_preprocessing: str = None,
+        verify: bool = False,
+    ):
         """TODO: add verification on the widget parameters and the sql query"""
+        # Execute SQL query
+        result, _ = run_sql(self.datalake, sql)
+
+        if data_preprocessing:
+            result = python_transform(data_preprocessing, result)
+
+        # Generate FusionCharts configuration
+        chart_config = {
+            "type": outputType.lower(),
+            "renderAt": "chart-container",
+            "width": "100%",
+            "height": "400",
+            "dataFormat": "json",
+            "dataSource": {
+                "chart": {
+                    "caption": caption,
+                    **params,
+                    "theme": "fusion",
+                },
+                "data": result,
+            },
+        }
+
+        if verify:
+            return render_chart(chart_config)
+
+        # If we don't verify, we stop the conversation there (the widget will be displayed by default)
         raise StopLoopException("We want to stop after the widget")
-        return
 
     def _run_conversation(self):
         # Message

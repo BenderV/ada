@@ -160,6 +160,7 @@ class ConversationMessage(DefaultBase, Base):
 
     @classmethod
     def from_autochat_message(cls, message: AutoChatMessage):
+
         kwargs = format_to_camel_case(**message.__dict__)
         # rewrite id to reqId
         kwargs["reqId"] = kwargs.pop("id", None)
