@@ -1,6 +1,6 @@
 import asyncio
 import json
-
+import os
 import numpy as np
 from playwright.async_api import async_playwright
 
@@ -54,9 +54,10 @@ async def render_chart_async(chart_config):
         finally:
             await browser.close()
 
-    # Save image to a file or return it as needed
-    with open("chart.png", "wb") as f:
-        f.write(chart_image)
+    # if "dev" environment, save the image to a file
+    if os.getenv("ENV") == "dev":
+        with open("chart.png", "wb") as f:
+            f.write(chart_image)
 
     return chart_image
 
