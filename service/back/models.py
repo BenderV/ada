@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 
-from autochat import Message as AutoChatMessage
+from autochat import Message as AutoChatMessage, Image as AutoChatImage
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     TIMESTAMP,
@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     func,
+    LargeBinary,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -123,6 +124,7 @@ class ConversationMessage(DefaultBase, Base):
     queryId = Column(Integer, ForeignKey("query.id"), nullable=True)
     reqId = Column(String, nullable=True)
     functionCallId = Column(String, nullable=True)
+    image = Column(LargeBinary, nullable=True)
 
     conversation = relationship("Conversation", back_populates="messages")
 
@@ -155,17 +157,19 @@ class ConversationMessage(DefaultBase, Base):
                 "content": self.content,
                 "function_call": self.functionCall,
                 "function_call_id": self.functionCallId,
+                # Transform image from binary to PIL
+                "image": AutoChatImage.from_bytes(self.image) if self.image else None,
             }
         )
 
     @classmethod
     def from_autochat_message(cls, message: AutoChatMessage):
-
         kwargs = format_to_camel_case(**message.__dict__)
         # rewrite id to reqId
         kwargs["reqId"] = kwargs.pop("id", None)
-        # Dismiss image for now
-        kwargs.pop("image", None)
+        # transfrom image from PIL to binary
+        if message.image:
+            kwargs["image"] = message.image.to_bytes()
         return ConversationMessage(**kwargs)
 
 
