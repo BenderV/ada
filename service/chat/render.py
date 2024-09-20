@@ -56,7 +56,7 @@ async def render_chart_async(chart_config):
 
     # if "dev" environment, save the image to a file
     if os.getenv("ENV") == "dev":
-        with open("chart.png", "wb") as f:
+        with open("/tmp/chart.png", "wb") as f:
             f.write(chart_image)
 
     return chart_image

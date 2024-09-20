@@ -79,7 +79,7 @@ files = [
 
 [[package]]
 name = "autochat"
-version = "0.3.4"
+version = "0.3.5"
 description = "Small OpenAI/Anthropic library to support chat templates, and function calls"
 optional = false
 python-versions = "*"

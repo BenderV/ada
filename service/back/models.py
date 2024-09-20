@@ -107,6 +107,7 @@ class ConversationMessage(DefaultBase, Base):
 
     id: int
     conversationId: int
+    name: str
     role: str
     content: str
     data: dict
@@ -135,7 +136,7 @@ class ConversationMessage(DefaultBase, Base):
 
     def to_dict(self):
         # Export to dict, only keys declared in the dataclass
-        return {
+        message = {
             "id": self.id,
             "conversationId": self.conversationId,
             "role": self.role,
@@ -148,19 +149,23 @@ class ConversationMessage(DefaultBase, Base):
             "queryId": self.queryId,
             "functionCallId": self.functionCallId,
         }
+        if self.functionCall and self.functionCall.get("name") == "PLOT_WIDGET":
+            message["dataSource"] = self.data
+            message["visualisationParams"] = self.data
+        return message
 
     def to_autochat_message(self) -> AutoChatMessage:
-        return AutoChatMessage(
-            **{
-                "role": self.role,
-                "name": self.name,
-                "content": self.content,
-                "function_call": self.functionCall,
-                "function_call_id": self.functionCallId,
-                # Transform image from binary to PIL
-                "image": AutoChatImage.from_bytes(self.image) if self.image else None,
-            }
+        message = AutoChatMessage(
+            role=self.role,
+            name=self.name,
+            content=self.content,
+            function_call=self.functionCall,
+            function_call_id=self.functionCallId,
+            # data (only for function call output)
         )
+        if self.image:
+            message.image = AutoChatImage.from_bytes(self.image)
+        return message
 
     @classmethod
     def from_autochat_message(cls, message: AutoChatMessage):
